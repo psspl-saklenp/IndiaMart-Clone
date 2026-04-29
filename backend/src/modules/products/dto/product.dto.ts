@@ -132,7 +132,7 @@ export class AttachImageDto {
   s3Key?: string;
 
   @ApiProperty({ description: 'Final public URL of the uploaded image' })
-  @IsUrl({ require_protocol: true })
+  @IsUrl({ require_protocol: true, require_tld: false })
   url!: string;
 
   @ApiPropertyOptional({ default: false })
