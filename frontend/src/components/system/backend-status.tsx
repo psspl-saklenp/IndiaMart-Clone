@@ -20,9 +20,7 @@ export function BackendStatus() {
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery<HealthResponse>({
     queryKey: ['backend-health'],
     queryFn: async () => {
-      // /health is excluded from the API prefix on the backend so we hit the root.
-      const baseRoot = (process.env.NEXT_PUBLIC_API_URL ?? '').replace(/\/api\/v1\/?$/, '');
-      const res = await api.get<HealthResponse>(`${baseRoot}/health`);
+      const res = await api.get<HealthResponse>('/health');
       return res.data;
     },
     refetchInterval: 30_000,

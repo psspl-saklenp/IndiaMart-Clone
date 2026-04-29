@@ -100,8 +100,8 @@ npm run dev:frontend
 
 | Check               | URL                                              | Expected                                              |
 | ------------------- | ------------------------------------------------ | ----------------------------------------------------- |
-| Backend liveness    | <http://localhost:3001/health>                   | `{ "status": "ok", ... }`                             |
-| Backend DB readiness| <http://localhost:3001/health/db>                | `{ "database": { "connected": true, ... } }`          |
+| Backend liveness    | <http://localhost:3001/api/v1/health>            | `{ "status": "ok", ... }`                             |
+| Backend DB readiness| <http://localhost:3001/api/v1/health/db>         | `{ "database": { "connected": true, ... } }`          |
 | Swagger / OpenAPI   | <http://localhost:3001/api/docs>                 | Swagger UI                                             |
 | Frontend home       | <http://localhost:3000>                          | Sticky navbar with login/sign-up; status panel                  |
 | Login page          | <http://localhost:3000/login>                    | Centered card; works against the seeded admin                    |

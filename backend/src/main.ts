@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 
-import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
@@ -46,12 +46,8 @@ async function bootstrap(): Promise<void> {
   });
 
   // ----- Global API prefix & validation -----
-  app.setGlobalPrefix(apiPrefix, {
-    exclude: [
-      { path: 'health', method: RequestMethod.GET },
-      { path: 'health/db', method: RequestMethod.GET },
-    ],
-  });
+  // Health endpoints live under the prefix (e.g. /api/v1/health) for consistency.
+  app.setGlobalPrefix(apiPrefix);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -84,7 +80,7 @@ async function bootstrap(): Promise<void> {
   await app.listen(port);
   logger.log(`Server running at http://localhost:${port} (${nodeEnv})`);
   logger.log(`API base: http://localhost:${port}/${apiPrefix}`);
-  logger.log(`Health:   http://localhost:${port}/health`);
+  logger.log(`Health:   http://localhost:${port}/${apiPrefix}/health`);
 }
 
 bootstrap().catch((error) => {
