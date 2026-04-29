@@ -8,8 +8,10 @@ import { User } from '../users/user.model';
 import { ProductsService } from '../products/products.service';
 import {
   type ListSellersQueryDto,
+  type MyProfileDto,
   type SellerProfileDto,
   type SellerSummaryDto,
+  type UpdateMyProfileDto,
 } from './dto/seller.dto';
 
 @Injectable()
@@ -73,6 +75,51 @@ export class SellersService {
       description: seller.description,
       productCount: productsList.meta.total,
       products: productsList.data,
+    };
+  }
+
+  async findMine(userId: string): Promise<MyProfileDto> {
+    const sp = await this.sellerProfileModel.findOne({ where: { userId } });
+    if (!sp) {
+      throw new NotFoundException(
+        'You do not have a supplier profile yet. Register as a seller to create one.',
+      );
+    }
+    return this.toMyProfile(sp);
+  }
+
+  async updateMine(userId: string, dto: UpdateMyProfileDto): Promise<MyProfileDto> {
+    const sp = await this.sellerProfileModel.findOne({ where: { userId } });
+    if (!sp) throw new NotFoundException('Supplier profile not found');
+
+    Object.assign(sp, {
+      companyName: dto.companyName ?? sp.companyName,
+      businessType: dto.businessType ?? sp.businessType,
+      establishedYear: dto.establishedYear ?? sp.establishedYear,
+      description: dto.description ?? sp.description,
+      gstNumber: dto.gstNumber !== undefined ? dto.gstNumber || null : sp.gstNumber,
+      logoUrl: dto.logoUrl ?? sp.logoUrl,
+      bannerUrl: dto.bannerUrl ?? sp.bannerUrl,
+    });
+    await sp.save();
+
+    return this.toMyProfile(sp);
+  }
+
+  private toMyProfile(sp: SellerProfile): MyProfileDto {
+    return {
+      id: sp.userId,
+      slug: sp.slug ?? sp.userId,
+      companyName: sp.companyName,
+      businessType: sp.businessType,
+      establishedYear: sp.establishedYear,
+      description: sp.description,
+      gstNumber: sp.gstNumber,
+      logoUrl: sp.logoUrl,
+      bannerUrl: sp.bannerUrl,
+      isVerifiedSupplier: sp.isVerifiedSupplier,
+      ratingAvg: sp.ratingAvg,
+      ratingCount: sp.ratingCount,
     };
   }
 

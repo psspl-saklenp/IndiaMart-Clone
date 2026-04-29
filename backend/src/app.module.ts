@@ -14,6 +14,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { InquiriesModule } from './modules/inquiries/inquiries.module';
 import { ProductsModule } from './modules/products/products.module';
 import { SearchModule } from './modules/search/search.module';
+import { SellerDashboardModule } from './modules/seller-dashboard/seller-dashboard.module';
 import { SellersModule } from './modules/sellers/sellers.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { UsersModule } from './modules/users/users.module';
@@ -57,6 +58,7 @@ import { UsersModule } from './modules/users/users.module';
     SellersModule,
     SearchModule,
     InquiriesModule,
+    SellerDashboardModule,
     UploadsModule,
   ],
   providers: [

@@ -95,6 +95,14 @@ export function Navbar() {
                   {(['seller', 'admin'] as Role[]).includes(user.role) && (
                     <>
                       <Link
+                        href="/seller/dashboard"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+                      >
+                        Dashboard
+                      </Link>
+                      <Link
                         href="/seller/products"
                         role="menuitem"
                         onClick={() => setMenuOpen(false)}
@@ -122,6 +130,14 @@ export function Navbar() {
                             {sellerCount}
                           </span>
                         )}
+                      </Link>
+                      <Link
+                        href="/seller/profile"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+                      >
+                        My profile
                       </Link>
                       <div className="border-t border-ink-100" />
                     </>
