@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
+import { MegaMenu } from '@/components/layout/mega-menu';
+import { SearchBar } from '@/components/layout/search-bar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import type { Role } from '@/types/api';
@@ -13,19 +15,17 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-ink-200 bg-white/85 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
         <Link href="/" className="text-base font-bold tracking-tight text-ink-900">
           indiamart-<span className="text-brand-600">clone</span>
         </Link>
 
-        {/* Search placeholder; the real search lands in Phase 5 */}
+        <div className="hidden md:block">
+          <MegaMenu />
+        </div>
+
         <div className="hidden flex-1 sm:block">
-          <div className="flex items-center rounded-md border border-ink-200 bg-ink-50 px-3 py-1.5 text-xs text-ink-400">
-            Search products, suppliers, categories…
-            <span className="ml-auto rounded bg-white px-1.5 text-[10px] uppercase text-ink-400">
-              Phase 5
-            </span>
-          </div>
+          <SearchBar />
         </div>
 
         <nav className="ml-auto flex items-center gap-2">

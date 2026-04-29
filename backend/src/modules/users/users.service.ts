@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import type { Transaction } from 'sequelize';
 
+import { uniqueSlug } from '../../common/utils/slugify';
 import { BuyerProfile } from './buyer-profile.model';
 import { SellerProfile } from './seller-profile.model';
 import { User } from './user.model';
@@ -73,10 +74,19 @@ export class UsersService {
         { transaction },
       );
     } else if (input.role === UserRole.SELLER) {
+      const seedName = companyName ?? input.name;
+      const slug = await uniqueSlug(seedName, async (candidate) => {
+        const existing = await this.sellerProfileModel.count({
+          where: { slug: candidate },
+          transaction,
+        });
+        return existing > 0;
+      });
       await this.sellerProfileModel.create(
         {
           userId: user.id,
-          companyName: companyName ?? input.name,
+          companyName: seedName,
+          slug,
           gstNumber: gstNumber ?? null,
         } as SellerProfile,
         { transaction },

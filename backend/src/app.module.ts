@@ -12,6 +12,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
+import { SellersModule } from './modules/sellers/sellers.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -51,6 +52,7 @@ import { UsersModule } from './modules/users/users.module';
     AuthModule,
     CategoriesModule,
     ProductsModule,
+    SellersModule,
     UploadsModule,
   ],
   providers: [

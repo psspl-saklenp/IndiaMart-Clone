@@ -109,3 +109,35 @@ export interface PresignUploadResponse {
   contentType: string;
   expiresIn: number;
 }
+
+export interface SellerSummary {
+  id: string;
+  slug: string;
+  name: string;
+  companyName: string | null;
+  isVerifiedSupplier: boolean;
+  ratingAvg: string;
+  ratingCount: number;
+  logoUrl: string | null;
+  businessType: string | null;
+  establishedYear: number | null;
+}
+
+export interface SellerProfile extends SellerSummary {
+  bannerUrl: string | null;
+  description: string | null;
+  productCount: number;
+  products: Product[];
+}
+
+export interface PaginatedSellers {
+  data: SellerSummary[];
+  meta: ApiMeta;
+}
+
+export interface ListSellersParams {
+  page?: number;
+  limit?: number;
+  q?: string;
+  verified?: boolean;
+}
