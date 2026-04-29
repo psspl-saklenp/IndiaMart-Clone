@@ -2,7 +2,7 @@
 
 A production-quality B2B marketplace web portal inspired by IndiaMART.
 
-> **Status:** Phase 1 of 9 — bootstrap only. The monorepo, framework skeletons, database, and CI are wired up. Real features (auth, catalog, search, inquiries, dashboards) ship in subsequent phases. See [`docs/architecture.md`](docs/architecture.md) for the full plan.
+> **Status:** Phase 2 of 9 — authentication is live. JWT access + refresh tokens, role-based access (buyer / seller / admin), bcrypt-hashed passwords, registration & login UI, and an admin seeder are all wired up. See [`docs/architecture.md`](docs/architecture.md) for the full roadmap.
 
 ## Tech stack
 
@@ -60,6 +60,30 @@ docker compose ps
 
 > **Windows / PowerShell tip.** If `npm install` is slow due to antivirus scanning `node_modules`, exclude `G:\indiamart-clone\**\node_modules` from real-time scanning.
 
+## Database setup (Phase 2+)
+
+Auth depends on the `users`, `buyer_profiles`, and `seller_profiles` tables. After `db:up` is healthy, run the migrations and the admin seeder:
+
+```pwsh
+npm run migrate          # creates tables
+npm run seed             # creates the default admin user
+```
+
+Default admin credentials (override via `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` env vars before seeding):
+
+- Email: `admin@indiamart.local`
+- Password: `ChangeMe@123`
+
+**Rotate these before any non-local deployment.**
+
+Useful related commands:
+
+```pwsh
+npm run migrate:undo     # rollback last migration
+npm run migrate:undo:all # rollback all migrations
+npm run seed:undo:all    # remove all seeded rows
+```
+
 ## Run the dev servers
 
 In two separate shells (or run only the one you need):
@@ -79,7 +103,9 @@ npm run dev:frontend
 | Backend liveness    | <http://localhost:3001/health>                   | `{ "status": "ok", ... }`                             |
 | Backend DB readiness| <http://localhost:3001/health/db>                | `{ "database": { "connected": true, ... } }`          |
 | Swagger / OpenAPI   | <http://localhost:3001/api/docs>                 | Swagger UI                                             |
-| Frontend home       | <http://localhost:3000>                          | "Phase 1 · Bootstrap complete" page with backend status |
+| Frontend home       | <http://localhost:3000>                          | Sticky navbar with login/sign-up; status panel                  |
+| Login page          | <http://localhost:3000/login>                    | Centered card; works against the seeded admin                    |
+| Register page       | <http://localhost:3000/register>                 | Buyer/seller toggle, validation, redirects on success            |
 
 ## Useful commands
 
@@ -135,6 +161,22 @@ Backend env vars are validated by Joi on boot (`backend/src/config/validation.sc
 | Frontend can't reach backend                             | Confirm backend is on port 3001 and `NEXT_PUBLIC_API_URL` matches. CORS allows `CLIENT_URL` only.   |
 | `npm install` fails on Windows due to long paths         | Run `git config --system core.longpaths true` and re-install.                                      |
 
+## Auth at a glance (Phase 2)
+
+| Endpoint                 | Method | Auth        | Notes                                                                   |
+| ------------------------ | ------ | ----------- | ----------------------------------------------------------------------- |
+| `/api/v1/auth/register`  | POST   | Public      | Buyer or seller (admin role cannot self-register). Throttled 10/hour.   |
+| `/api/v1/auth/login`     | POST   | Public      | bcrypt-verified; returns access token, sets refresh cookie. 5/min.       |
+| `/api/v1/auth/refresh`   | POST   | Cookie      | Reads `refresh_token` httpOnly cookie; rotates both tokens.              |
+| `/api/v1/auth/logout`    | POST   | Public      | Clears the refresh cookie.                                              |
+| `/api/v1/auth/me`        | GET    | Bearer JWT  | Current user with linked profile.                                       |
+
+Session model:
+
+- **Access token**: JWT, 15-minute lifetime, returned in JSON, held in browser memory only (Redux + axios module). Never written to `localStorage`.
+- **Refresh token**: JWT, 7-day lifetime, sent as `httpOnly` `Secure` (in production) `SameSite=Lax` cookie. Rotated on every `/auth/refresh` call.
+- All routes are protected by default (global `JwtAuthGuard`). Use `@Public()` to opt out and `@Roles(...)` plus `RolesGuard` to restrict by role.
+
 ## Next steps
 
-Phase 2 — Authentication. See [`docs/architecture.md`](docs/architecture.md) and the implementation plan for the roadmap.
+Phase 3 — Catalog (categories, products + images, S3 presigned upload). See [`docs/architecture.md`](docs/architecture.md) for the full roadmap.

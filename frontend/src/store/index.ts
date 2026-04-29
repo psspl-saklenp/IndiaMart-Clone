@@ -1,24 +1,16 @@
-import { configureStore, createSlice } from '@reduxjs/toolkit';
+import { configureStore } from '@reduxjs/toolkit';
 import { type TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
-/**
- * Root Redux store. Slices added per phase:
- *   - Phase 2: auth (current user, token bookkeeping)
- *   - Phase 4: ui (global modals, toast queue)
- *   - Phase 6: compare (compare-list of products)
- *
- * The `system` slice is a phase-1 placeholder so the store has at least one
- * reducer. It will be repurposed in Phase 4 for cross-cutting UI flags.
- */
-const systemSlice = createSlice({
-  name: 'system',
-  initialState: { bootedAt: Date.now() },
-  reducers: {},
-});
+import { authReducer } from './slices/auth.slice';
 
+/**
+ * Root Redux store.
+ * Phase 2: auth slice (current user + token bookkeeping).
+ * Future phases add: ui, compare, etc.
+ */
 export const store = configureStore({
   reducer: {
-    system: systemSlice.reducer,
+    auth: authReducer,
   },
   devTools: process.env.NEXT_PUBLIC_ENV !== 'production',
 });

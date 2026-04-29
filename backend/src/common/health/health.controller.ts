@@ -3,6 +3,8 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Sequelize } from 'sequelize-typescript';
 
+import { Public } from '../decorators/public.decorator';
+
 interface HealthResponse {
   status: 'ok' | 'degraded' | 'error';
   service: string;
@@ -23,6 +25,7 @@ const SERVICE_NAME = 'indiamart-clone-backend';
 const SERVICE_VERSION = '0.1.0';
 
 @ApiTags('Health')
+@Public()
 @Controller('health')
 export class HealthController {
   private readonly logger = new Logger(HealthController.name);

@@ -56,4 +56,18 @@ Workspaces are managed by **npm workspaces**. No Turborepo for now; revisit if C
 
 ## Phased Delivery
 
-Phases 1–9 are tracked in the implementation plan. **Phase 1 (this commit) = bootstrap only**: monorepo, skeletons, configs, env, health check, CI. No business features yet.
+Phases 1–9 are tracked in the implementation plan.
+
+- **Phase 1 (done)** — monorepo, skeletons, configs, env, health check, CI.
+- **Phase 2 (done)** — auth: `users`, `buyer_profiles`, `seller_profiles` tables; JWT access + refresh; bcrypt; role guards; admin seeder; login/register UI.
+- **Phase 3 (next)** — catalog: categories, products + images, S3 presigned upload, seller CRUD UI.
+- Phases 4–9 unchanged from the implementation plan.
+
+## Auth subsystem (Phase 2)
+
+- Global `JwtAuthGuard` registered as `APP_GUARD`; `@Public()` opts a route out.
+- Global `RolesGuard` evaluates `@Roles(...)` metadata against the authenticated `req.user`.
+- Two distinct JWT secrets (`JWT_SECRET`, `JWT_REFRESH_SECRET`) so leaking one does not compromise the other.
+- Refresh tokens rotate on every successful refresh; future enhancement (Phase 9) adds a server-side store with reuse detection.
+- bcrypt rounds = 12 (configurable via constant in `auth.service.ts`).
+- Admin seeder is idempotent (`ADMIN_EMAIL` / `ADMIN_PASSWORD` env overrides).
