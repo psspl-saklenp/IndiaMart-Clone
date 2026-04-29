@@ -6,12 +6,18 @@ import { useState } from 'react';
 import { MegaMenu } from '@/components/layout/mega-menu';
 import { SearchBar } from '@/components/layout/search-bar';
 import { Button } from '@/components/ui/button';
+import { useInquiryCounts } from '@/features/inquiries/use-inquiry-counts';
 import { useAuth } from '@/hooks/use-auth';
 import type { Role } from '@/types/api';
 
 export function Navbar() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { data: counts } = useInquiryCounts();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const sellerCount = counts?.asSeller ?? 0;
+  const buyerCount = counts?.asBuyer ?? 0;
+  const totalCount = sellerCount + buyerCount;
 
   return (
     <header className="sticky top-0 z-30 border-b border-ink-200 bg-white/85 backdrop-blur">
@@ -36,12 +42,22 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-md border border-ink-200 bg-white px-3 py-1.5 text-sm hover:bg-ink-50"
+                className="relative flex items-center gap-2 rounded-md border border-ink-200 bg-white px-3 py-1.5 text-sm hover:bg-ink-50"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
-                <span className="size-6 rounded-full bg-brand-100 text-center text-xs font-semibold leading-6 text-brand-700">
-                  {user.name.charAt(0).toUpperCase()}
+                <span className="relative inline-block">
+                  <span className="size-6 rounded-full bg-brand-100 text-center text-xs font-semibold leading-6 text-brand-700">
+                    {user.name.charAt(0).toUpperCase()}
+                  </span>
+                  {totalCount > 0 && (
+                    <span
+                      aria-label={`${totalCount} unread inquiries`}
+                      className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[9px] font-semibold text-white"
+                    >
+                      {totalCount > 9 ? '9+' : totalCount}
+                    </span>
+                  )}
                 </span>
                 <span className="hidden text-ink-700 sm:inline">{user.name.split(' ')[0]}</span>
                 <span className="rounded bg-ink-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-ink-500">
@@ -60,6 +76,22 @@ export function Navbar() {
                     <p className="truncate text-ink-500">{user.email}</p>
                   </div>
 
+                  {(['buyer', 'admin'] as Role[]).includes(user.role) && (
+                    <Link
+                      href="/me/inquiries"
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+                    >
+                      <span>My inquiries</span>
+                      {buyerCount > 0 && (
+                        <span className="rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-medium text-white">
+                          {buyerCount}
+                        </span>
+                      )}
+                    </Link>
+                  )}
+
                   {(['seller', 'admin'] as Role[]).includes(user.role) && (
                     <>
                       <Link
@@ -77,6 +109,19 @@ export function Navbar() {
                         className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
                       >
                         + New product
+                      </Link>
+                      <Link
+                        href="/seller/inquiries"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center justify-between px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+                      >
+                        <span>Inquiries received</span>
+                        {sellerCount > 0 && (
+                          <span className="rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-medium text-white">
+                            {sellerCount}
+                          </span>
+                        )}
                       </Link>
                       <div className="border-t border-ink-100" />
                     </>

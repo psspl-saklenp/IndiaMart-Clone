@@ -20,6 +20,9 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
             >
               + New product
             </Link>
+            <Link href="/seller/inquiries" className="text-ink-700 hover:text-brand-700">
+              Inquiries
+            </Link>
           </nav>
         </aside>
         {children}

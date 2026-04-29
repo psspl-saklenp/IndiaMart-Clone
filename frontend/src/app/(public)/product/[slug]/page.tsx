@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { ProductImageGallery } from '@/features/products/product-image-gallery';
 import { getProduct } from '@/features/products/api';
+import { InquiryDialog } from '@/features/inquiries/inquiry-dialog';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -82,14 +83,13 @@ export default async function ProductDetailPage({ params }: Props) {
               MOQ: {product.minOrderQty} {product.unit} · {product.currency}
             </p>
 
-            <button
-              type="button"
-              disabled
-              className="mt-4 w-full rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white opacity-60"
-              title="Inquiry system ships in Phase 6"
-            >
-              Send inquiry (Phase 6)
-            </button>
+            <InquiryDialog
+              productId={product.id}
+              productName={product.name}
+              productUnit={product.unit}
+              sellerId={product.seller.id}
+              sellerName={product.seller.companyName ?? product.seller.name}
+            />
           </div>
 
           <div className="rounded-lg border border-ink-200 bg-white p-4">
