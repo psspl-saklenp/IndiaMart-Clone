@@ -22,7 +22,9 @@ export function LoginForm() {
   }, [isAuthenticated, router, next]);
 
   useEffect(() => {
-    return () => reset();
+    return () => {
+      reset();
+    };
   }, [reset]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {

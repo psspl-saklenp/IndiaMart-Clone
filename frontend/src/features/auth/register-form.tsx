@@ -38,7 +38,9 @@ export function RegisterForm() {
   }, [isAuthenticated, router]);
 
   useEffect(() => {
-    return () => reset();
+    return () => {
+      reset();
+    };
   }, [reset]);
 
   const passwordIssue = useMemo(() => validatePassword(password), [password]);

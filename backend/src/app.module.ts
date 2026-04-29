@@ -10,6 +10,9 @@ import { HealthModule } from './common/health/health.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AuthModule } from './modules/auth/auth.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { ProductsModule } from './modules/products/products.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -46,6 +49,9 @@ import { UsersModule } from './modules/users/users.module';
     // ---- Domain modules ----
     UsersModule,
     AuthModule,
+    CategoriesModule,
+    ProductsModule,
+    UploadsModule,
   ],
   providers: [
     // Global guards run in this order: throttler -> jwt -> roles.

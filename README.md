@@ -2,7 +2,7 @@
 
 A production-quality B2B marketplace web portal inspired by IndiaMART.
 
-> **Status:** Phase 2 of 9 — authentication is live. JWT access + refresh tokens, role-based access (buyer / seller / admin), bcrypt-hashed passwords, registration & login UI, and an admin seeder are all wired up. See [`docs/architecture.md`](docs/architecture.md) for the full roadmap.
+> **Status:** Phase 3 of 9 — catalog is live. Categories (with seed data), products + images (with presigned-URL S3 upload), public listing/detail pages, and the seller CRUD UI are all wired up. See [`docs/architecture.md`](docs/architecture.md) for the full roadmap.
 
 ## Tech stack
 
@@ -170,6 +170,36 @@ Backend env vars are validated by Joi on boot (`backend/src/config/validation.sc
 | `/api/v1/auth/refresh`   | POST   | Cookie      | Reads `refresh_token` httpOnly cookie; rotates both tokens.              |
 | `/api/v1/auth/logout`    | POST   | Public      | Clears the refresh cookie.                                              |
 | `/api/v1/auth/me`        | GET    | Bearer JWT  | Current user with linked profile.                                       |
+
+## Catalog at a glance (Phase 3)
+
+| Endpoint                                   | Method | Auth          | Notes                                                              |
+| ------------------------------------------ | ------ | ------------- | ------------------------------------------------------------------ |
+| `/api/v1/categories`                       | GET    | Public        | Full nested tree (top-level + sub-categories).                     |
+| `/api/v1/categories/:slug`                 | GET    | Public        | Get one category by slug.                                          |
+| `/api/v1/categories`                       | POST/PATCH/DELETE | Admin | CRUD; auto slug; admin-only.                                       |
+| `/api/v1/products`                         | GET    | Public        | Paginated, filtered (q / category / sellerId / price / stock).     |
+| `/api/v1/products/mine`                    | GET    | Seller        | List the current seller's products (incl. inactive).               |
+| `/api/v1/products/:slug`                   | GET    | Public        | Detail; increments `viewCount`.                                    |
+| `/api/v1/products`                         | POST   | Seller        | Create; slug auto-generated; specs JSONB.                          |
+| `/api/v1/products/:id`                     | PATCH  | Seller (own)  | Update; ownership enforced (admin can edit any).                   |
+| `/api/v1/products/:id`                     | DELETE | Seller (own)  | Soft-delete.                                                       |
+| `/api/v1/products/:id/images`              | POST   | Seller (own)  | Attach image record after S3 upload.                               |
+| `/api/v1/products/:productId/images/:imgId`| DELETE | Seller (own)  | Remove an image.                                                   |
+| `/api/v1/uploads/presign`                  | POST   | Seller/Admin  | Presigned S3 PUT URL (5-min expiry). 503 with guidance if AWS unset. |
+
+### Image upload flow
+
+1. Browser calls `POST /uploads/presign` with `{ fileName, contentType, purpose }` and gets back `{ uploadUrl, publicUrl, s3Key }`.
+2. Browser `PUT`s the file body directly to `uploadUrl` with the matching `Content-Type`.
+3. Browser calls `POST /products/:id/images` with `{ s3Key, url: publicUrl, isPrimary?, position? }` to record the image on the product.
+
+Server never proxies bytes — scales independent of upload size. If `AWS_S3_BUCKET` is unset, presign returns HTTP 503 with a human-readable hint to populate the AWS env vars.
+
+### Default seed data
+
+- 6 top-level categories (Apparel, Electronics, Industrial Supplies, Building & Construction, Agriculture, Food & Beverages) with 5 sub-categories each.
+- Admin user (`admin@indiamart.local` / `ChangeMe@123`) for catalog moderation.
 
 Session model:
 

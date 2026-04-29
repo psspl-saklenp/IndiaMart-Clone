@@ -60,8 +60,9 @@ Phases 1–9 are tracked in the implementation plan.
 
 - **Phase 1 (done)** — monorepo, skeletons, configs, env, health check, CI.
 - **Phase 2 (done)** — auth: `users`, `buyer_profiles`, `seller_profiles` tables; JWT access + refresh; bcrypt; role guards; admin seeder; login/register UI.
-- **Phase 3 (next)** — catalog: categories, products + images, S3 presigned upload, seller CRUD UI.
-- Phases 4–9 unchanged from the implementation plan.
+- **Phase 3 (done)** — catalog: `categories` (nested tree, seeded), `products`, `product_images`; S3 presigned-URL upload; public listing+detail pages; seller CRUD UI.
+- **Phase 4 (next)** — IndiaMART-style public homepage clone: hero, mega-menu, featured suppliers, trending products, footer; refined product listing.
+- Phases 5–9 unchanged from the implementation plan.
 
 ## Auth subsystem (Phase 2)
 
@@ -71,3 +72,11 @@ Phases 1–9 are tracked in the implementation plan.
 - Refresh tokens rotate on every successful refresh; future enhancement (Phase 9) adds a server-side store with reuse detection.
 - bcrypt rounds = 12 (configurable via constant in `auth.service.ts`).
 - Admin seeder is idempotent (`ADMIN_EMAIL` / `ADMIN_PASSWORD` env overrides).
+
+## Catalog subsystem (Phase 3)
+
+- Slugs are generated server-side from `name` via `slugify` and made unique with a small retry loop, falling back to a random 6-char suffix.
+- Trigram index (`pg_trgm`) on `products.name` lets fuzzy search land cheaply in Phase 5; for Phase 3 the listing endpoint just uses `ILIKE`.
+- Ownership is enforced inside `ProductsService.assertOwnerOrAdmin(...)` rather than in a guard, because we need access to the loaded entity to compare `sellerId`.
+- `view_count` is incremented in a fire-and-forget call so a counter failure never breaks a product detail request.
+- Image upload uses presigned PUT URLs (5-minute expiry). The browser uploads directly to S3 — the backend never proxies bytes — then calls `POST /products/:id/images` to record the metadata. When `AWS_S3_BUCKET` is unset the presign endpoint returns 503 with operator guidance.
