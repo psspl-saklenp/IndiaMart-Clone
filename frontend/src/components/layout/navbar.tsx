@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
+import type { Role } from '@/types/api';
 
 export function Navbar() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -51,13 +52,36 @@ export function Navbar() {
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 mt-2 w-48 overflow-hidden rounded-md border border-ink-200 bg-white shadow-lg"
+                  className="absolute right-0 mt-2 w-56 overflow-hidden rounded-md border border-ink-200 bg-white shadow-lg"
                   onMouseLeave={() => setMenuOpen(false)}
                 >
                   <div className="border-b border-ink-100 px-3 py-2 text-xs">
                     <p className="font-medium text-ink-900">{user.name}</p>
                     <p className="truncate text-ink-500">{user.email}</p>
                   </div>
+
+                  {(['seller', 'admin'] as Role[]).includes(user.role) && (
+                    <>
+                      <Link
+                        href="/seller/products"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+                      >
+                        My products
+                      </Link>
+                      <Link
+                        href="/seller/products/new"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+                      >
+                        + New product
+                      </Link>
+                      <div className="border-t border-ink-100" />
+                    </>
+                  )}
+
                   <button
                     type="button"
                     role="menuitem"
