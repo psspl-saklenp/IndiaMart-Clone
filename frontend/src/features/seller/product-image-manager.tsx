@@ -5,7 +5,7 @@ import { useState, type ChangeEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { attachImage, detachImage } from '@/features/products/api';
-import { presignUpload, uploadFileToS3 } from '@/features/uploads/api';
+import { uploadFile } from '@/features/uploads/api';
 import type { Product } from '@/types/catalog';
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
@@ -39,17 +39,11 @@ export function ProductImageManager({ product }: { product: Product }) {
 
     setUploading(true);
     try {
-      const presigned = await presignUpload({
-        fileName: file.name,
-        contentType: file.type as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif',
-        purpose: 'product-image',
-      });
-
-      const publicUrl = await uploadFileToS3(presigned, file);
+      const result = await uploadFile(file, 'product-image');
 
       await attachImage(product.id, {
-        s3Key: presigned.s3Key,
-        url: publicUrl,
+        s3Key: result.s3Key,
+        url: result.url,
         isPrimary: product.images.length === 0, // first image becomes primary
         position: product.images.length,
         altText: product.name,
