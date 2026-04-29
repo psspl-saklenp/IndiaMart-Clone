@@ -9,6 +9,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './common/health/health.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { InquiriesModule } from './modules/inquiries/inquiries.module';
@@ -60,6 +61,7 @@ import { UsersModule } from './modules/users/users.module';
     InquiriesModule,
     SellerDashboardModule,
     UploadsModule,
+    AdminModule,
   ],
   providers: [
     // Global guards run in this order: throttler -> jwt -> roles.

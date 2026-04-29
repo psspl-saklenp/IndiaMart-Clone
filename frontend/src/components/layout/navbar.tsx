@@ -76,6 +76,20 @@ export function Navbar() {
                     <p className="truncate text-ink-500">{user.email}</p>
                   </div>
 
+                  {user.role === 'admin' && (
+                    <>
+                      <Link
+                        href="/admin/dashboard"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-3 py-2 text-sm text-brand-700 hover:bg-brand-50"
+                      >
+                        Admin panel
+                      </Link>
+                      <div className="border-t border-ink-100" />
+                    </>
+                  )}
+
                   {(['buyer', 'admin'] as Role[]).includes(user.role) && (
                     <Link
                       href="/me/inquiries"
