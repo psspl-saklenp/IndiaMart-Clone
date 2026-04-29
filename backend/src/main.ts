@@ -32,6 +32,9 @@ async function bootstrap(): Promise<void> {
     helmet({
       contentSecurityPolicy: nodeEnv === 'production' ? undefined : false,
       crossOriginEmbedderPolicy: false,
+      // Allow other origins (the Next.js dev server, future Vercel deploy) to
+      // embed assets served by /uploads/* via plain <img>.
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
   app.use(compression());
