@@ -23,6 +23,7 @@ export interface ProductImage {
 
 export interface ProductSellerSummary {
   id: string;
+  slug: string | null;
   name: string;
   companyName: string | null;
   isVerifiedSupplier: boolean;

@@ -2,8 +2,8 @@
 
 /* ----------------------------------------------------------------------
    Theme tokens (Tailwind v4 CSS-first config)
-   IndiaMART-inspired palette: warm orange primary, deep navy text,
-   neutral surfaces. Tweak freely; nothing else hardcodes colors.
+   B2B marketplace palette: warm orange primary + sunny secondary +
+   navy text on neutral surfaces. Density-tuned for info-rich pages.
 ---------------------------------------------------------------------- */
 @theme {
   --color-brand-50: #fff7ed;
@@ -16,6 +16,16 @@
   --color-brand-700: #c2410c;
   --color-brand-800: #9a3412;
   --color-brand-900: #7c2d12;
+
+  /* Sun-yellow secondary used for high-emphasis CTAs ("Get best price") */
+  --color-sun-50: #fefce8;
+  --color-sun-100: #fef9c3;
+  --color-sun-200: #fef08a;
+  --color-sun-300: #fde047;
+  --color-sun-400: #facc15;
+  --color-sun-500: #eab308;
+  --color-sun-600: #ca8a04;
+  --color-sun-700: #a16207;
 
   --color-ink-50: #f8fafc;
   --color-ink-100: #f1f5f9;
@@ -31,8 +41,9 @@
   --font-display: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
-  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.05), 0 1px 3px 0 rgb(0 0 0 / 0.1);
-  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.08);
+  --shadow-card-hover: 0 6px 12px -2px rgb(15 23 42 / 0.12), 0 2px 4px -2px rgb(15 23 42 / 0.08);
+  --shadow-pop: 0 12px 24px -8px rgb(15 23 42 / 0.18);
 }
 
 /* Base resets */
@@ -43,6 +54,14 @@ html {
 body {
   font-family: var(--font-body);
   color: var(--color-ink-800);
-  background-color: var(--color-ink-50);
+  background-color: var(--color-ink-100);
   -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* Subtle focus ring across the app */
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
 }

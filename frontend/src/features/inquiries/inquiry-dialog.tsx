@@ -17,7 +17,18 @@ interface Props {
   productUnit: string;
   sellerId: string;
   sellerName: string;
+  /** Override the trigger button text. Defaults to "Send inquiry". */
+  triggerLabel?: string;
+  /** Override the trigger button class. Defaults to a full-width brand-600 button. */
+  triggerClassName?: string;
+  /** Override the default message shown when the dialog opens. */
+  defaultMessage?: string;
+  /** Override the default subject shown when the dialog opens. */
+  defaultSubject?: string;
 }
+
+const DEFAULT_TRIGGER_CLASS =
+  'mt-4 w-full rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700';
 
 export function InquiryDialog({
   productId,
@@ -25,14 +36,21 @@ export function InquiryDialog({
   productUnit,
   sellerId,
   sellerName,
+  triggerLabel = 'Send inquiry',
+  triggerClassName = DEFAULT_TRIGGER_CLASS,
+  defaultMessage,
+  defaultSubject,
 }: Props) {
   const router = useRouter();
   const { user, isAuthenticated, status } = useAuth();
   const [open, setOpen] = useState(false);
 
-  const [subject, setSubject] = useState(`Quote for ${productName}`);
+  const [subject, setSubject] = useState(
+    defaultSubject ?? `Quote for ${productName}`,
+  );
   const [message, setMessage] = useState(
-    `Hi ${sellerName}, please share your best price and lead time for ${productName}. Thank you.`,
+    defaultMessage ??
+      `Hi ${sellerName}, please share your best price and lead time for ${productName}. Thank you.`,
   );
   const [quantity, setQuantity] = useState('1');
   const [expectedPrice, setExpectedPrice] = useState('');
@@ -77,7 +95,7 @@ export function InquiryDialog({
       <button
         type="button"
         disabled
-        className="mt-4 w-full rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white opacity-60"
+        className={`${triggerClassName} opacity-60`}
       >
         Loading…
       </button>
@@ -88,9 +106,9 @@ export function InquiryDialog({
     return (
       <Link
         href={`/login?next=${encodeURIComponent(`/product/${productId}`)}`}
-        className="mt-4 block w-full rounded-md bg-brand-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-brand-700"
+        className={`${triggerClassName} block text-center`}
       >
-        Log in to send inquiry
+        {triggerLabel}
       </Link>
     );
   }
@@ -121,9 +139,9 @@ export function InquiryDialog({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-4 w-full rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+        className={triggerClassName}
       >
-        Send inquiry
+        {triggerLabel}
       </button>
 
       {open && (

@@ -143,6 +143,7 @@ export function SearchBar({
       >
         <input
           type="search"
+          role="combobox"
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
@@ -155,6 +156,7 @@ export function SearchBar({
           aria-label="Search"
           aria-autocomplete="list"
           aria-expanded={showDropdown}
+          aria-controls="search-suggestions"
           className="flex-1 bg-transparent px-3 py-1.5 text-ink-900 placeholder:text-ink-400 focus:outline-none"
         />
         <button
@@ -167,6 +169,7 @@ export function SearchBar({
 
       {showDropdown && (
         <div
+          id="search-suggestions"
           role="listbox"
           className="absolute left-0 right-0 top-full z-40 mt-1 max-h-[70vh] overflow-y-auto rounded-md border border-ink-200 bg-white shadow-lg"
         >

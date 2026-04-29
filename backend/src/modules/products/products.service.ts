@@ -256,6 +256,7 @@ export class ProductsService {
     const category = p.category;
     const sellerSummary = {
       id: seller?.id ?? p.sellerId,
+      slug: seller?.sellerProfile?.slug ?? null,
       name: seller?.name ?? 'Unknown supplier',
       companyName: seller?.sellerProfile?.companyName ?? null,
       isVerifiedSupplier: seller?.sellerProfile?.isVerifiedSupplier ?? false,

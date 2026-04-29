@@ -163,6 +163,7 @@ export class ProductImageResponseDto {
 
 export class ProductSellerSummaryDto {
   @ApiProperty() id!: string;
+  @ApiProperty({ required: false, nullable: true }) slug!: string | null;
   @ApiProperty() name!: string;
   @ApiProperty({ required: false, nullable: true }) companyName!: string | null;
   @ApiProperty() isVerifiedSupplier!: boolean;

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 
 import { MegaMenu } from '@/components/layout/mega-menu';
 import { SearchBar } from '@/components/layout/search-bar';
@@ -20,9 +20,35 @@ export function Navbar() {
   const totalCount = sellerCount + buyerCount;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-ink-200 bg-white/85 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-ink-200 bg-white shadow-sm">
+      {/* Utility ribbon */}
+      <div className="hidden border-b border-ink-100 bg-ink-50 text-[11px] text-ink-500 sm:block">
+        <div className="mx-auto flex h-7 max-w-6xl items-center justify-end gap-4 px-4">
+          <Link href="/requirements/new" className="hover:text-ink-900">
+            Get best price
+          </Link>
+          <span className="text-ink-300">|</span>
+          <Link href="/register?role=seller" className="hover:text-ink-900">
+            Sell with us
+          </Link>
+          <span className="text-ink-300">|</span>
+          <a href="http://localhost:3001/api/docs" target="_blank" rel="noreferrer noopener" className="hover:text-ink-900">
+            API
+          </a>
+          {!isAuthenticated && (
+            <>
+              <span className="text-ink-300">|</span>
+              <Link href="/login" className="hover:text-ink-900">
+                Sign in
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Main bar */}
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-        <Link href="/" className="text-base font-bold tracking-tight text-ink-900">
+        <Link href="/" className="text-lg font-bold tracking-tight text-ink-900">
           indiamart-<span className="text-brand-600">clone</span>
         </Link>
 
@@ -31,7 +57,11 @@ export function Navbar() {
         </div>
 
         <div className="hidden flex-1 sm:block">
-          <SearchBar />
+          {/* Suspense boundary required because SearchBar reads useSearchParams,
+              which Next.js 15 enforces to be wrapped on prerender. */}
+          <Suspense fallback={<div className="h-9 rounded-md border border-ink-200 bg-ink-50" />}>
+            <SearchBar />
+          </Suspense>
         </div>
 
         <nav className="ml-auto flex items-center gap-2">
