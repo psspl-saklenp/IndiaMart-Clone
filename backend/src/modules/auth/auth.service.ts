@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'node:crypto';
+import type { SignOptions } from 'jsonwebtoken';
 
 import type { AppConfig } from '../../config/configuration';
 import type { User } from '../users/user.model';
@@ -130,14 +131,19 @@ export class AuthService {
       tokenId: randomUUID(),
     };
 
+    // The duration strings ('15m', '7d') are validated upstream; the cast
+    // satisfies @nestjs/jwt v11's tighter `expiresIn: number | ms.StringValue` typing.
+    const expiresIn = jwtConfig.expiration as SignOptions['expiresIn'];
+    const refreshExpiresIn = jwtConfig.refreshExpiration as SignOptions['expiresIn'];
+
     const accessToken = await this.jwtService.signAsync(accessPayload, {
       secret: jwtConfig.secret,
-      expiresIn: jwtConfig.expiration,
+      expiresIn,
     });
 
     const refreshToken = await this.jwtService.signAsync(refreshPayload, {
       secret: jwtConfig.refreshSecret,
-      expiresIn: jwtConfig.refreshExpiration,
+      expiresIn: refreshExpiresIn,
     });
 
     return {

@@ -1,7 +1,7 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 import { AuthService } from './auth.service';
@@ -69,10 +69,12 @@ describe('AuthService', () => {
     usersService = module.get(UsersService);
     jwtService = module.get(JwtService);
 
-    jwtService.signAsync.mockImplementation(async (payload: object, opts: { secret?: string }) => {
-      const isRefresh = opts?.secret === stubJwtConfig.refreshSecret;
-      return `${isRefresh ? 'refresh' : 'access'}.${(payload as { sub: string }).sub}`;
-    });
+    jwtService.signAsync.mockImplementation(
+      async (payload: object, opts?: JwtSignOptions) => {
+        const isRefresh = opts?.secret === stubJwtConfig.refreshSecret;
+        return `${isRefresh ? 'refresh' : 'access'}.${(payload as { sub: string }).sub}`;
+      },
+    );
   });
 
   describe('register', () => {

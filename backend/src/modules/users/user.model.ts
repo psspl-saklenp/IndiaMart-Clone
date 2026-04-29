@@ -78,8 +78,8 @@ export class User extends Model<User> {
    * Strips the password hash from JSON serialisations so we can't accidentally
    * leak it via API responses.
    */
-  override toJSON(): Omit<ReturnType<Model['toJSON']>, 'passwordHash' | 'password_hash'> {
-    const json = super.toJSON() as Record<string, unknown>;
+  override toJSON(): Record<string, unknown> {
+    const json: Record<string, unknown> = { ...(super.toJSON() as object) };
     delete json.passwordHash;
     delete json.password_hash;
     return json;
