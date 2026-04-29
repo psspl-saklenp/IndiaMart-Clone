@@ -1,0 +1,184 @@
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { type WhereOptions } from 'sequelize';
+
+import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import { buildMeta, type PaginatedResult } from '../../common/utils/pagination';
+import { Category } from '../categories/category.model';
+import { InquiriesService } from '../inquiries/inquiries.service';
+import { UserRole } from '../users/enums/user-role.enum';
+import { User } from '../users/user.model';
+import {
+  type CreateRequirementDto,
+  type ListRequirementsQueryDto,
+  type RequirementDto,
+} from './dto/requirement.dto';
+import { RequirementStatus } from './enums/requirement-status.enum';
+import { Requirement } from './requirement.model';
+
+@Injectable()
+export class RequirementsService {
+  constructor(
+    @InjectModel(Requirement) private readonly requirementModel: typeof Requirement,
+    @InjectModel(Category) private readonly categoryModel: typeof Category,
+    private readonly inquiriesService: InquiriesService,
+  ) {}
+
+  async create(buyer: AuthenticatedUser, dto: CreateRequirementDto): Promise<RequirementDto> {
+    const category = await this.categoryModel.findByPk(dto.categoryId);
+    if (!category) throw new NotFoundException('Category not found.');
+
+    const created = await this.requirementModel.create({
+      buyerId: buyer.id,
+      categoryId: dto.categoryId,
+      title: dto.title,
+      description: dto.description,
+      quantity: dto.quantity ?? null,
+      unit: dto.unit ?? null,
+      expectedPrice: dto.expectedPrice !== undefined ? dto.expectedPrice.toFixed(2) : null,
+      locationCity: dto.locationCity ?? null,
+      status: RequirementStatus.OPEN,
+    } as Requirement);
+
+    return this.findById(created.id);
+  }
+
+  async list(query: ListRequirementsQueryDto): Promise<PaginatedResult<RequirementDto>> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const offset = (page - 1) * limit;
+
+    const where: WhereOptions<Requirement> = {
+      status: query.status ?? RequirementStatus.OPEN,
+    };
+    if (query.categoryId) (where as Record<string, unknown>).categoryId = query.categoryId;
+
+    const { rows, count } = await this.requirementModel.findAndCountAll({
+      where,
+      include: [
+        { model: User, as: 'buyer', attributes: ['id', 'name'] },
+        { model: Category, as: 'category', attributes: ['id', 'name', 'slug'] },
+      ],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset,
+    });
+
+    return {
+      data: rows.map((r) => this.toDto(r)),
+      meta: buildMeta(count, page, limit),
+    };
+  }
+
+  async listMine(buyerId: string): Promise<RequirementDto[]> {
+    const rows = await this.requirementModel.findAll({
+      where: { buyerId },
+      include: [
+        { model: User, as: 'buyer', attributes: ['id', 'name'] },
+        { model: Category, as: 'category', attributes: ['id', 'name', 'slug'] },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+    return rows.map((r) => this.toDto(r));
+  }
+
+  async findById(id: string): Promise<RequirementDto> {
+    const row = await this.requirementModel.findByPk(id, {
+      include: [
+        { model: User, as: 'buyer', attributes: ['id', 'name'] },
+        { model: Category, as: 'category', attributes: ['id', 'name', 'slug'] },
+      ],
+    });
+    if (!row) throw new NotFoundException('Requirement not found');
+    return this.toDto(row);
+  }
+
+  async close(id: string, user: AuthenticatedUser): Promise<RequirementDto> {
+    const row = await this.requirementModel.findByPk(id);
+    if (!row) throw new NotFoundException('Requirement not found');
+    if (row.buyerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Only the requirement owner (or admin) can close it.');
+    }
+    row.status = RequirementStatus.CLOSED;
+    await row.save();
+    return this.findById(row.id);
+  }
+
+  /**
+   * Lets a seller "respond" to an open RFQ. Bookkeeping:
+   *  - Creates a regular inquiry from the *buyer* to the *responding seller*
+   *    (so the inquiry conventions + UI are reused), with the seller's
+   *    intro message recorded. The seller can then continue the chat.
+   *  - Bumps the requirement's response counter.
+   */
+  async respond(
+    id: string,
+    seller: AuthenticatedUser,
+    message: string,
+  ): Promise<{ inquiryId: string }> {
+    if (seller.role !== UserRole.SELLER && seller.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Only suppliers can respond to requirements.');
+    }
+    const trimmed = (message ?? '').trim();
+    if (!trimmed) throw new BadRequestException('Message cannot be empty.');
+
+    const row = await this.requirementModel.findByPk(id);
+    if (!row) throw new NotFoundException('Requirement not found');
+    if (row.status !== RequirementStatus.OPEN) {
+      throw new BadRequestException('This requirement is closed.');
+    }
+    if (row.buyerId === seller.id) {
+      throw new BadRequestException('You cannot respond to your own requirement.');
+    }
+
+    // Spoof the buyer-side context for InquiriesService.create so the
+    // resulting inquiry sits in the buyer's inbox properly.
+    const buyerCtx: AuthenticatedUser = {
+      id: row.buyerId,
+      email: '',
+      role: UserRole.BUYER,
+    };
+    const inquiry = await this.inquiriesService.create(buyerCtx, {
+      sellerId: seller.id,
+      subject: row.title,
+      message: `Buyer requirement: ${row.description}\n\n— Quoting supplier: ${trimmed}`,
+      ...(row.quantity ? { quantity: row.quantity } : {}),
+      ...(row.unit ? { unit: row.unit } : {}),
+      ...(row.expectedPrice ? { expectedPrice: Number(row.expectedPrice) } : {}),
+    });
+
+    row.responseCount += 1;
+    await row.save();
+
+    return { inquiryId: inquiry.id };
+  }
+
+  private toDto(r: Requirement): RequirementDto {
+    return {
+      id: r.id,
+      title: r.title,
+      description: r.description,
+      status: r.status,
+      quantity: r.quantity,
+      unit: r.unit,
+      expectedPrice: r.expectedPrice,
+      locationCity: r.locationCity,
+      responseCount: r.responseCount,
+      createdAt: r.get('createdAt') as Date,
+      buyer: {
+        id: r.buyer?.id ?? r.buyerId,
+        name: r.buyer?.name ?? 'Unknown',
+      },
+      category: {
+        id: r.category?.id ?? r.categoryId,
+        name: r.category?.name ?? '',
+        slug: r.category?.slug ?? '',
+      },
+    };
+  }
+}

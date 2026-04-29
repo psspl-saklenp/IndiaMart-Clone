@@ -137,7 +137,7 @@ export default async function HomePage() {
         </div>
         <div className="flex gap-3">
           <Link
-            href="/register?role=buyer"
+            href="/requirements/new"
             className="rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
           >
             Post requirement

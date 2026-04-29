@@ -91,19 +91,54 @@ export function Navbar() {
                   )}
 
                   {(['buyer', 'admin'] as Role[]).includes(user.role) && (
-                    <Link
-                      href="/me/inquiries"
-                      role="menuitem"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center justify-between px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
-                    >
-                      <span>My inquiries</span>
-                      {buyerCount > 0 && (
-                        <span className="rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-medium text-white">
-                          {buyerCount}
-                        </span>
-                      )}
-                    </Link>
+                    <>
+                      <Link
+                        href="/me/dashboard"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+                      >
+                        My dashboard
+                      </Link>
+                      <Link
+                        href="/me/inquiries"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center justify-between px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+                      >
+                        <span>My inquiries</span>
+                        {buyerCount > 0 && (
+                          <span className="rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-medium text-white">
+                            {buyerCount}
+                          </span>
+                        )}
+                      </Link>
+                      <Link
+                        href="/me/saved"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+                      >
+                        Saved products
+                      </Link>
+                      <Link
+                        href="/me/requirements"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+                      >
+                        My requirements
+                      </Link>
+                      <Link
+                        href="/requirements/new"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
+                      >
+                        + Post a requirement
+                      </Link>
+                      <div className="border-t border-ink-100" />
+                    </>
                   )}
 
                   {(['seller', 'admin'] as Role[]).includes(user.role) && (
@@ -144,6 +179,14 @@ export function Navbar() {
                             {sellerCount}
                           </span>
                         )}
+                      </Link>
+                      <Link
+                        href="/seller/leads"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+                      >
+                        Buy leads
                       </Link>
                       <Link
                         href="/seller/profile"

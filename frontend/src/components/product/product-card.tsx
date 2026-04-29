@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
+import { SaveHeart } from '@/features/saved/save-heart';
 import type { Product } from '@/types/catalog';
 
 const STOCK_LABEL: Record<Product['stockStatus'], string> = {
@@ -42,6 +43,7 @@ export function ProductCard({ product }: { product: Product }) {
         <span className="absolute left-2 top-2">
           <Badge tone={STOCK_TONE[product.stockStatus]}>{STOCK_LABEL[product.stockStatus]}</Badge>
         </span>
+        <SaveHeart productId={product.id} className="absolute right-2 top-2" />
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3">

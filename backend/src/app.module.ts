@@ -14,6 +14,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { InquiriesModule } from './modules/inquiries/inquiries.module';
 import { ProductsModule } from './modules/products/products.module';
+import { RequirementsModule } from './modules/requirements/requirements.module';
+import { SavedProductsModule } from './modules/saved-products/saved-products.module';
 import { SearchModule } from './modules/search/search.module';
 import { SellerDashboardModule } from './modules/seller-dashboard/seller-dashboard.module';
 import { SellersModule } from './modules/sellers/sellers.module';
@@ -60,6 +62,8 @@ import { UsersModule } from './modules/users/users.module';
     SearchModule,
     InquiriesModule,
     SellerDashboardModule,
+    SavedProductsModule,
+    RequirementsModule,
     UploadsModule,
     AdminModule,
   ],
