@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 
 import { uniqueSlug } from '../../common/utils/slugify';
 import { Category } from './category.model';
@@ -105,5 +106,22 @@ export class CategoriesService {
   async remove(id: string): Promise<void> {
     const cat = await this.findById(id);
     await cat.destroy();
+  }
+
+  /**
+   * Lightweight text search on category name. Used by the unified search
+   * endpoint to surface category links alongside product / supplier hits.
+   */
+  async searchByName(q: string, limit = 8): Promise<Category[]> {
+    const term = `%${q.trim()}%`;
+    if (!term.replaceAll('%', '')) return [];
+    return this.categoryModel.findAll({
+      where: { name: { [Op.iLike]: term } },
+      order: [
+        ['position', 'ASC'],
+        ['name', 'ASC'],
+      ],
+      limit,
+    });
   }
 }
