@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/sequelize';
 
@@ -16,7 +12,13 @@ import { UserRole } from '../users/enums/user-role.enum';
 
 describe('InquiriesService', () => {
   let service: InquiriesService;
-  let inquiryModel: { create: jest.Mock; findByPk: jest.Mock; update: jest.Mock; findAll: jest.Mock; findAndCountAll: jest.Mock };
+  let inquiryModel: {
+    create: jest.Mock;
+    findByPk: jest.Mock;
+    update: jest.Mock;
+    findAll: jest.Mock;
+    findAndCountAll: jest.Mock;
+  };
   let messageModel: { create: jest.Mock };
   let productModel: { findByPk: jest.Mock; increment: jest.Mock };
   let userModel: { findByPk: jest.Mock };
@@ -107,9 +109,9 @@ describe('InquiriesService', () => {
         messages: [],
         get: () => new Date(),
       });
-      await expect(
-        service.addMessage('i1', otherUser, { message: 'hi' }),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+      await expect(service.addMessage('i1', otherUser, { message: 'hi' })).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
     });
 
     it('rejects messages on a closed inquiry', async () => {
@@ -121,9 +123,9 @@ describe('InquiriesService', () => {
         messages: [],
         get: () => new Date(),
       });
-      await expect(
-        service.addMessage('i1', buyer, { message: 'hi' }),
-      ).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.addMessage('i1', buyer, { message: 'hi' })).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
   });
 
@@ -138,9 +140,9 @@ describe('InquiriesService', () => {
         get: () => new Date(),
         save: jest.fn(),
       });
-      await expect(
-        service.updateStatus('i1', buyer, InquiryStatus.CLOSED),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+      await expect(service.updateStatus('i1', buyer, InquiryStatus.CLOSED)).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
     });
   });
 });

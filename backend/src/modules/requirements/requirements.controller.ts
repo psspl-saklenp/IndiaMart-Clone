@@ -1,19 +1,5 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseUUIDPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 
 import {
@@ -45,16 +31,28 @@ export class RequirementsController {
   @Public()
   @Get()
   @ApiOperation({ summary: 'List open requirements (the buy-leads feed)' })
-  list(
-    @Query() query: ListRequirementsQueryDto,
-  ): Promise<PaginatedResult<RequirementDto>> {
+  list(@Query() query: ListRequirementsQueryDto): Promise<PaginatedResult<RequirementDto>> {
     return this.requirementsService.list(query);
   }
 
-  @Roles(UserRole.BUYER, UserRole.ADMIN)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
+  @ApiBearerAuth()
+  @Get('feed')
+  @ApiOperation({
+    summary:
+      'Buy-leads feed for sellers — same as GET /requirements but excludes the viewer\u2019s own requirements.',
+  })
+  feed(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: ListRequirementsQueryDto,
+  ): Promise<PaginatedResult<RequirementDto>> {
+    return this.requirementsService.list(query, { excludeBuyerId: user.id });
+  }
+
+  @Roles(UserRole.BUYER, UserRole.SELLER, UserRole.ADMIN)
   @ApiBearerAuth()
   @Get('mine')
-  @ApiOperation({ summary: 'Buyer\u2019s own posted requirements' })
+  @ApiOperation({ summary: 'Authenticated user\u2019s own posted requirements' })
   mine(@CurrentUser() user: AuthenticatedUser): Promise<RequirementDto[]> {
     return this.requirementsService.listMine(user.id);
   }
@@ -66,7 +64,9 @@ export class RequirementsController {
     return this.requirementsService.findById(id);
   }
 
-  @Roles(UserRole.BUYER, UserRole.ADMIN)
+  // Sellers can post requirements too: every account is a buyer by default,
+  // and the role only gates seller-side privileges (catalog management).
+  @Roles(UserRole.BUYER, UserRole.SELLER, UserRole.ADMIN)
   @ApiBearerAuth()
   @Post()
   @ApiOperation({ summary: 'Post a new buy requirement' })
@@ -78,7 +78,7 @@ export class RequirementsController {
     return this.requirementsService.create(user, dto);
   }
 
-  @Roles(UserRole.BUYER, UserRole.ADMIN)
+  @Roles(UserRole.BUYER, UserRole.SELLER, UserRole.ADMIN)
   @ApiBearerAuth()
   @Patch(':id/close')
   @ApiOperation({ summary: 'Close one of your own requirements' })

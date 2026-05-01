@@ -9,10 +9,7 @@ import { RequirementsController } from './requirements.controller';
 import { RequirementsService } from './requirements.service';
 
 @Module({
-  imports: [
-    SequelizeModule.forFeature([Requirement, Category, User]),
-    InquiriesModule,
-  ],
+  imports: [SequelizeModule.forFeature([Requirement, Category, User]), InquiriesModule],
   controllers: [RequirementsController],
   providers: [RequirementsService],
   exports: [RequirementsService],

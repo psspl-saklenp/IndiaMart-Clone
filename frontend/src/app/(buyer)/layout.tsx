@@ -6,12 +6,13 @@ import { Protected } from '@/features/auth/protected';
 
 /**
  * Buyer-area shell: navy app bar + left rail + main content + footer +
- * floating quick-actions. Visible only to authenticated buyers (admins can
- * also access for moderation).
+ * floating quick-actions. Open to every authenticated user — the buyer
+ * experience is the default for buyers, sellers, and admins alike. Sellers
+ * jump into their seller dashboard explicitly via the "Sell" button.
  */
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Protected allow={['buyer', 'admin']}>
+    <Protected allow={['buyer', 'seller', 'admin']}>
       <div className="flex min-h-screen flex-col bg-ink-50">
         <BuyerAppBar />
         <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">

@@ -70,11 +70,23 @@ export class UpdateInquiryStatusDto {
   status!: InquiryStatus;
 }
 
+export const INQUIRY_SIDES = ['buyer', 'seller'] as const;
+export type InquirySide = (typeof INQUIRY_SIDES)[number];
+
 export class ListInquiriesQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ enum: INQUIRY_STATUSES })
   @IsOptional()
   @IsEnum(INQUIRY_STATUSES)
   status?: InquiryStatus;
+
+  @ApiPropertyOptional({
+    enum: INQUIRY_SIDES,
+    description:
+      'Restrict the listing to inquiries where the viewer is on the given side. Defaults to both sides so users that are buyers AND sellers see every conversation they participate in.',
+  })
+  @IsOptional()
+  @IsEnum(INQUIRY_SIDES)
+  side?: InquirySide;
 }
 
 // ---- Response shapes ----

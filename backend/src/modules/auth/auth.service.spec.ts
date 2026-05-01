@@ -1,4 +1,4 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
@@ -8,6 +8,7 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { Category } from '../categories/category.model';
 import { Product } from '../products/product.model';
+import { SellerProfile } from '../users/seller-profile.model';
 import { UsersService } from '../users/users.service';
 import { UserRole } from '../users/enums/user-role.enum';
 import type { JwtRefreshPayload } from './types/jwt-payload.interface';
@@ -23,6 +24,10 @@ describe('AuthService', () => {
   let authService: AuthService;
   let usersService: jest.Mocked<UsersService>;
   let jwtService: jest.Mocked<JwtService>;
+  let sellerProfileModel: { count: jest.Mock; create: jest.Mock };
+  let categoryModel: { findOne: jest.Mock; create: jest.Mock };
+  let productModel: { count: jest.Mock; create: jest.Mock };
+  let sequelizeConnection: { transaction: jest.Mock };
 
   const buildUser = (overrides: Record<string, unknown> = {}) => ({
     id: 'user-uuid-1',
@@ -37,6 +42,15 @@ describe('AuthService', () => {
   });
 
   beforeEach(async () => {
+    sellerProfileModel = { count: jest.fn(), create: jest.fn() };
+    categoryModel = { findOne: jest.fn(), create: jest.fn() };
+    productModel = { count: jest.fn(), create: jest.fn() };
+    // Default stub: run the callback with a fake transaction object so the
+    // service's transactional code path is exercised end-to-end.
+    sequelizeConnection = {
+      transaction: jest.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb({ id: 'tx' })),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -66,14 +80,16 @@ describe('AuthService', () => {
           },
         },
         {
-          // The seller signup path injects the Sequelize connection to wrap
-          // user/profile/product creation in a transaction. Existing register/
-          // login/refresh tests don't exercise it, so an empty stub is enough.
+          // The seller signup paths inject the Sequelize connection to wrap
+          // user/profile/product creation in a transaction. The default stub
+          // immediately invokes the callback so the transactional logic is
+          // exercised; individual tests can override the spy as needed.
           provide: getConnectionToken(),
-          useValue: { transaction: jest.fn() },
+          useValue: sequelizeConnection,
         },
-        { provide: getModelToken(Category), useValue: {} },
-        { provide: getModelToken(Product), useValue: {} },
+        { provide: getModelToken(Category), useValue: categoryModel },
+        { provide: getModelToken(Product), useValue: productModel },
+        { provide: getModelToken(SellerProfile), useValue: sellerProfileModel },
       ],
     }).compile();
 
@@ -81,12 +97,10 @@ describe('AuthService', () => {
     usersService = module.get(UsersService);
     jwtService = module.get(JwtService);
 
-    jwtService.signAsync.mockImplementation(
-      async (payload: object, opts?: JwtSignOptions) => {
-        const isRefresh = opts?.secret === stubJwtConfig.refreshSecret;
-        return `${isRefresh ? 'refresh' : 'access'}.${(payload as { sub: string }).sub}`;
-      },
-    );
+    jwtService.signAsync.mockImplementation(async (payload: object, opts?: JwtSignOptions) => {
+      const isRefresh = opts?.secret === stubJwtConfig.refreshSecret;
+      return `${isRefresh ? 'refresh' : 'access'}.${(payload as { sub: string }).sub}`;
+    });
   });
 
   describe('register', () => {
@@ -198,6 +212,87 @@ describe('AuthService', () => {
           tokenId: 'x',
         } as JwtRefreshPayload),
       ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+  });
+
+  describe('upgradeToSeller', () => {
+    const dto = {
+      city: 'Mumbai',
+      pincode: '400001',
+      panNumber: 'ABCDE1234F',
+      gstNumber: '27ABCDE1234F1Z5',
+      products: [
+        { name: 'Industrial Bearing 6203' },
+        { name: 'Coupling Sleeve 22mm' },
+        { name: 'Rotary Encoder Module' },
+      ],
+    };
+
+    it('flips the role, creates a seller profile, seeds products, and reissues tokens', async () => {
+      const save = jest.fn();
+      const buyer = buildUser({
+        save,
+        buyerProfile: { companyName: 'Acme Co' },
+      });
+      usersService.findById.mockResolvedValue(buyer as never);
+      usersService.findByIdOrFail.mockResolvedValue({
+        ...buyer,
+        role: UserRole.SELLER,
+      } as never);
+
+      sellerProfileModel.count.mockResolvedValue(0);
+      sellerProfileModel.create.mockResolvedValue({});
+      categoryModel.findOne.mockResolvedValue({ id: 'cat-1' });
+      productModel.count.mockResolvedValue(0);
+      productModel.create.mockResolvedValue({});
+
+      const result = await authService.upgradeToSeller('user-uuid-1', dto);
+
+      // Role is flipped before the save inside the transaction.
+      expect(buyer.role).toBe(UserRole.SELLER);
+      expect(save).toHaveBeenCalledTimes(1);
+
+      // Seller profile is created with the buyer's existing company name.
+      expect(sellerProfileModel.create).toHaveBeenCalledTimes(1);
+      const profileArgs = sellerProfileModel.create.mock.calls[0]?.[0];
+      expect(profileArgs).toMatchObject({
+        userId: 'user-uuid-1',
+        companyName: 'Acme Co',
+        gstNumber: '27ABCDE1234F1Z5',
+        panNumber: 'ABCDE1234F',
+        city: 'Mumbai',
+        pincode: '400001',
+      });
+
+      // All three seed products are created.
+      expect(productModel.create).toHaveBeenCalledTimes(3);
+
+      // Tokens reissued and last-login bumped.
+      expect(usersService.updateLastLogin).toHaveBeenCalledWith('user-uuid-1');
+      expect(result.user.role).toBe(UserRole.SELLER);
+      expect(result.accessToken).toBe('access.user-uuid-1');
+      expect(result.refreshToken).toBe('refresh.user-uuid-1');
+    });
+
+    it('rejects with NotFoundException when the user no longer exists', async () => {
+      usersService.findById.mockResolvedValue(null);
+
+      await expect(authService.upgradeToSeller('missing', dto)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(sellerProfileModel.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects with ConflictException when the user is already a seller', async () => {
+      const save = jest.fn();
+      const existingSeller = buildUser({ role: UserRole.SELLER, save });
+      usersService.findById.mockResolvedValue(existingSeller as never);
+
+      await expect(
+        authService.upgradeToSeller('user-uuid-1', dto),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(save).not.toHaveBeenCalled();
+      expect(sellerProfileModel.create).not.toHaveBeenCalled();
     });
   });
 

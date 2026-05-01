@@ -8,7 +8,9 @@ import { listSavedIds, saveProduct, unsaveProduct } from './api';
 
 export function useSavedSet() {
   const { isAuthenticated, user } = useAuth();
-  const enabled = isAuthenticated && (user?.role === 'buyer' || user?.role === 'admin');
+  // Every authenticated user can wishlist products — sellers retain their
+  // buyer capabilities after upgrading.
+  const enabled = isAuthenticated && Boolean(user);
 
   return useQuery({
     queryKey: ['saved-ids'],

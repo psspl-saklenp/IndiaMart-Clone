@@ -1,13 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { useSellAction } from '@/features/auth/use-sell-action';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
-import { useAppDispatch } from '@/store';
-import { openSellerSignup } from '@/store/slices/ui.slice';
 
 /**
  * Top app bar used inside the buyer area only.
@@ -19,21 +17,12 @@ import { openSellerSignup } from '@/store/slices/ui.slice';
 export function BuyerAppBar() {
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const dispatch = useAppDispatch();
-  const router = useRouter();
+  // Single shared decision tree for the Sell call-to-action: buyers get
+  // the upgrade modal, sellers/admins go to /seller/dashboard, and any
+  // accidental unauthenticated viewer is redirected to /register.
+  const handleSellClick = useSellAction();
 
   const firstName = user?.name?.split(' ')[0] ?? 'there';
-  // Buyers/admins land here. Buyers can't access /seller/dashboard, so they
-  // get the seller signup modal; admins (who already have seller access) go
-  // straight to the dashboard.
-  const isAlreadySeller = user?.role === 'seller' || user?.role === 'admin';
-  function handleSellClick() {
-    if (isAlreadySeller) {
-      router.push('/seller/dashboard');
-    } else {
-      dispatch(openSellerSignup());
-    }
-  }
 
   return (
     <header className="sticky top-0 z-30 w-full bg-[var(--color-im-navy-800)] text-white shadow-md">

@@ -8,6 +8,8 @@ import type {
   RegisterResponse,
   RegisterSellerPayload,
   RegisterSellerResponse,
+  UpgradeToSellerPayload,
+  UpgradeToSellerResponse,
 } from '@/types/auth';
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
@@ -24,6 +26,13 @@ export async function registerSeller(
   payload: RegisterSellerPayload,
 ): Promise<RegisterSellerResponse> {
   const { data } = await api.post<RegisterSellerResponse>('/auth/register-seller', payload);
+  return data;
+}
+
+export async function upgradeToSeller(
+  payload: UpgradeToSellerPayload,
+): Promise<UpgradeToSellerResponse> {
+  const { data } = await api.post<UpgradeToSellerResponse>('/auth/upgrade-to-seller', payload);
   return data;
 }
 

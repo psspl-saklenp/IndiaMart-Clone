@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   Logger,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -17,17 +18,15 @@ import type { AppConfig } from '../../config/configuration';
 import { uniqueSlug } from '../../common/utils/slugify';
 import { Category } from '../categories/category.model';
 import { Product } from '../products/product.model';
+import { SellerProfile } from '../users/seller-profile.model';
 import type { User } from '../users/user.model';
 import { UserRole } from '../users/enums/user-role.enum';
 import { UsersService } from '../users/users.service';
-import type {
-  LoginResponseDto,
-  PublicUserDto,
-  RegisterResponseDto,
-} from './dto/auth-response.dto';
+import type { LoginResponseDto, PublicUserDto, RegisterResponseDto } from './dto/auth-response.dto';
 import type { LoginDto } from './dto/login.dto';
 import type { RegisterDto } from './dto/register.dto';
-import type { RegisterSellerDto } from './dto/register-seller.dto';
+import type { RegisterSellerDto, SellerSignupProductDto } from './dto/register-seller.dto';
+import type { UpgradeToSellerDto } from './dto/upgrade-to-seller.dto';
 import type { JwtPayload, JwtRefreshPayload } from './types/jwt-payload.interface';
 
 const BCRYPT_ROUNDS = 12;
@@ -49,6 +48,8 @@ export class AuthService {
     @InjectConnection() private readonly sequelize: Sequelize,
     @InjectModel(Category) private readonly categoryModel: typeof Category,
     @InjectModel(Product) private readonly productModel: typeof Product,
+    @InjectModel(SellerProfile)
+    private readonly sellerProfileModel: typeof SellerProfile,
   ) {}
 
   async register(dto: RegisterDto): Promise<RegisterResponseDto & { refreshToken: string }> {
@@ -110,38 +111,7 @@ export class AuthService {
         transaction,
       );
 
-      // Resolve a fallback category once so every product without an
-      // explicit `categoryId` lands in the same bucket.
-      const fallbackCategory = await this.resolveFallbackCategory(transaction);
-
-      for (const item of dto.products) {
-        const categoryId = item.categoryId ?? fallbackCategory.id;
-        const slug = await uniqueSlug(item.name, async (candidate) => {
-          const count = await this.productModel.count({
-            where: { slug: candidate },
-            transaction,
-          });
-          return count > 0;
-        });
-        await this.productModel.create(
-          {
-            sellerId: created.id,
-            categoryId,
-            name: item.name,
-            slug,
-            description: item.name,
-            price: (item.price ?? 0).toFixed(2),
-            currency: 'INR',
-            minOrderQty: 1,
-            unit: 'piece',
-            stockStatus: 'in_stock',
-            // Drafts: keep them out of the public catalog until the seller
-            // edits them with real descriptions / prices.
-            isActive: false,
-          } as Product,
-          { transaction },
-        );
-      }
+      await this.seedSellerProducts(transaction, created.id, dto.products);
 
       return created;
     });
@@ -151,6 +121,79 @@ export class AuthService {
     const tokens = await this.issueTokens(user);
     return {
       user: this.toPublicUser(user),
+      accessToken: tokens.accessToken,
+      expiresIn: tokens.accessExpiresIn,
+      refreshToken: tokens.refreshToken,
+    };
+  }
+
+  /**
+   * Promotes an authenticated buyer to a seller. Creates the matching
+   * SellerProfile, seeds the initial draft catalog, and re-issues a token
+   * pair (the JWT carries the role, so the previous one is now stale).
+   *
+   * Wrapped in a transaction so a partial failure rolls back the role
+   * change as well as profile/product creation.
+   */
+  async upgradeToSeller(
+    userId: string,
+    dto: UpgradeToSellerDto,
+  ): Promise<RegisterResponseDto & { refreshToken: string }> {
+    const existing = await this.usersService.findById(userId);
+    if (!existing) {
+      throw new NotFoundException('User not found');
+    }
+    if (existing.role !== UserRole.BUYER) {
+      // Sellers already have a profile; admins are not consumer accounts and
+      // shouldn't grow a seller profile through this endpoint.
+      throw new ConflictException(
+        existing.role === UserRole.SELLER
+          ? 'You are already registered as a seller'
+          : 'This account cannot be upgraded to a seller',
+      );
+    }
+
+    const upgraded = await this.sequelize.transaction(async (transaction) => {
+      // Flip the role first so the freshly-loaded user reflects the new state.
+      existing.role = UserRole.SELLER;
+      await existing.save({ transaction });
+
+      // Seed the seller profile. Prefer the buyer's company name if one was
+      // captured at signup, otherwise fall back to the user's own name.
+      const seedName = existing.buyerProfile?.companyName ?? existing.name;
+      const slug = await uniqueSlug(seedName, async (candidate) => {
+        const count = await this.sellerProfileModel.count({
+          where: { slug: candidate },
+          transaction,
+        });
+        return count > 0;
+      });
+      await this.sellerProfileModel.create(
+        {
+          userId: existing.id,
+          companyName: seedName,
+          slug,
+          gstNumber: dto.gstNumber ?? null,
+          panNumber: dto.panNumber ?? null,
+          city: dto.city ?? null,
+          pincode: dto.pincode ?? null,
+        } as SellerProfile,
+        { transaction },
+      );
+
+      await this.seedSellerProducts(transaction, existing.id, dto.products);
+
+      // Reload with profiles inside the same transaction so the returned
+      // user sees the just-created seller profile.
+      return this.usersService.findByIdOrFail(existing.id, transaction);
+    });
+
+    this.logger.log(`Upgraded user ${upgraded.id} from buyer to seller`);
+    await this.usersService.updateLastLogin(upgraded.id);
+
+    const tokens = await this.issueTokens(upgraded);
+    return {
+      user: this.toPublicUser(upgraded),
       accessToken: tokens.accessToken,
       expiresIn: tokens.accessExpiresIn,
       refreshToken: tokens.refreshToken,
@@ -243,6 +286,51 @@ export class AuthService {
 
   private async hashPassword(plain: string): Promise<string> {
     return bcrypt.hash(plain, BCRYPT_ROUNDS);
+  }
+
+  /**
+   * Creates the seed product list shared by both seller signup paths
+   * (`registerSeller` and `upgradeToSeller`). Each row lands as an inactive
+   * draft so the seller still gets to review prices/descriptions before the
+   * catalog is published.
+   */
+  private async seedSellerProducts(
+    transaction: Transaction,
+    sellerId: string,
+    products: SellerSignupProductDto[],
+  ): Promise<void> {
+    // Resolve a fallback category once so every product without an explicit
+    // `categoryId` lands in the same bucket.
+    const fallbackCategory = await this.resolveFallbackCategory(transaction);
+
+    for (const item of products) {
+      const categoryId = item.categoryId ?? fallbackCategory.id;
+      const slug = await uniqueSlug(item.name, async (candidate) => {
+        const count = await this.productModel.count({
+          where: { slug: candidate },
+          transaction,
+        });
+        return count > 0;
+      });
+      await this.productModel.create(
+        {
+          sellerId,
+          categoryId,
+          name: item.name,
+          slug,
+          description: item.name,
+          price: (item.price ?? 0).toFixed(2),
+          currency: 'INR',
+          minOrderQty: 1,
+          unit: 'piece',
+          stockStatus: 'in_stock',
+          // Drafts: keep them out of the public catalog until the seller
+          // edits them with real descriptions / prices.
+          isActive: false,
+        } as Product,
+        { transaction },
+      );
+    }
   }
 
   /**

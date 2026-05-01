@@ -6,17 +6,16 @@ import { Suspense, useState } from 'react';
 import { MegaMenu } from '@/components/layout/mega-menu';
 import { SearchBar } from '@/components/layout/search-bar';
 import { Button } from '@/components/ui/button';
+import { useSellAction } from '@/features/auth/use-sell-action';
 import { useInquiryCounts } from '@/features/inquiries/use-inquiry-counts';
 import { useAuth } from '@/hooks/use-auth';
-import { useAppDispatch } from '@/store';
-import { openSellerSignup } from '@/store/slices/ui.slice';
 import type { Role } from '@/types/api';
 
 export function Navbar() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { data: counts } = useInquiryCounts();
   const [menuOpen, setMenuOpen] = useState(false);
-  const dispatch = useAppDispatch();
+  const onSellClick = useSellAction();
 
   const sellerCount = counts?.asSeller ?? 0;
   const buyerCount = counts?.asBuyer ?? 0;
@@ -33,7 +32,7 @@ export function Navbar() {
           <span className="text-ink-300">|</span>
           <button
             type="button"
-            onClick={() => dispatch(openSellerSignup())}
+            onClick={onSellClick}
             className="hover:text-ink-900"
           >
             Sell with us

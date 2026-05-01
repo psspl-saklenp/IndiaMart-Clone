@@ -1,19 +1,5 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseUUIDPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import {
   CurrentUser,
@@ -40,9 +26,11 @@ import {
 export class InquiriesController {
   constructor(private readonly inquiriesService: InquiriesService) {}
 
-  @Roles(UserRole.BUYER, UserRole.ADMIN)
+  // Sellers can also send inquiries because every user is a buyer by
+  // default — the seller role is additive on top of buyer capabilities.
+  @Roles(UserRole.BUYER, UserRole.SELLER, UserRole.ADMIN)
   @Post()
-  @ApiOperation({ summary: 'Send an inquiry to a supplier (buyer-only)' })
+  @ApiOperation({ summary: 'Send an inquiry to a supplier (any authenticated user)' })
   create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateInquiryDto,
@@ -59,7 +47,8 @@ export class InquiriesController {
 
   @Get()
   @ApiOperation({
-    summary: 'List inquiries; role-scoped (buyer\u2192own sent, seller\u2192received, admin\u2192all)',
+    summary:
+      'List inquiries; role-scoped (buyer\u2192own sent, seller\u2192received, admin\u2192all)',
   })
   list(
     @CurrentUser() user: AuthenticatedUser,

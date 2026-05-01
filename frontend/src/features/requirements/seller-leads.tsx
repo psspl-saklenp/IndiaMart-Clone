@@ -10,7 +10,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { listCategoryTree } from '@/features/categories/api';
-import { listRequirements, respondToRequirement } from '@/features/requirements/api';
+import { listSellerLeads, respondToRequirement } from '@/features/requirements/api';
 import type { Category } from '@/types/catalog';
 import type { Requirement } from '@/types/engagement';
 
@@ -40,8 +40,10 @@ export function SellerLeads() {
 
   const listQ = useQuery({
     queryKey: ['leads', { page, categoryId }],
+    // Use the seller-scoped feed so the viewer’s own requirements (e.g.
+    // those they posted as a buyer) are excluded server-side.
     queryFn: () =>
-      listRequirements({
+      listSellerLeads({
         page,
         limit: 20,
         status: 'open',

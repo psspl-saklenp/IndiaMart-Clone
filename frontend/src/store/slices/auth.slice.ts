@@ -7,6 +7,7 @@ import type {
   LoginPayload,
   RegisterPayload,
   RegisterSellerPayload,
+  UpgradeToSellerPayload,
 } from '@/types/auth';
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated' | 'error';
@@ -60,6 +61,25 @@ export const registerSellerThunk = createAsyncThunk<
     return res.user;
   } catch (err) {
     return rejectWithValue(err instanceof Error ? err.message : 'Seller registration failed');
+  }
+});
+
+/**
+ * Promotes the currently-authenticated buyer to a seller. The backend
+ * re-issues a token pair (the JWT carries the role), so we swap the access
+ * token and replace `state.user` with the freshly returned seller user.
+ */
+export const upgradeToSellerThunk = createAsyncThunk<
+  AuthUser,
+  UpgradeToSellerPayload,
+  { rejectValue: string }
+>('auth/upgradeToSeller', async (payload, { rejectWithValue }) => {
+  try {
+    const res = await authApi.upgradeToSeller(payload);
+    setAccessToken(res.accessToken);
+    return res.user;
+  } catch (err) {
+    return rejectWithValue(err instanceof Error ? err.message : 'Seller upgrade failed');
   }
 });
 
@@ -140,6 +160,13 @@ const authSlice = createSlice({
       })
       .addCase(registerSellerThunk.fulfilled, handleAuthSuccess)
       .addCase(registerSellerThunk.rejected, handleAuthFailure)
+
+      .addCase(upgradeToSellerThunk.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(upgradeToSellerThunk.fulfilled, handleAuthSuccess)
+      .addCase(upgradeToSellerThunk.rejected, handleAuthFailure)
 
       .addCase(hydrateThunk.pending, (state) => {
         state.status = 'loading';

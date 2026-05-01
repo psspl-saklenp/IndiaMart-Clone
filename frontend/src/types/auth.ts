@@ -46,6 +46,18 @@ export interface RegisterSellerPayload {
   products: SellerSignupProduct[];
 }
 
+/**
+ * Promotes an already-authenticated buyer to a seller. Account fields are
+ * intentionally absent because the user is identified by their JWT.
+ */
+export interface UpgradeToSellerPayload {
+  city?: string;
+  pincode?: string;
+  panNumber?: string;
+  gstNumber?: string;
+  products: SellerSignupProduct[];
+}
+
 export interface LoginResponse {
   user: AuthUser;
   accessToken: string;
@@ -54,6 +66,7 @@ export interface LoginResponse {
 
 export type RegisterResponse = LoginResponse;
 export type RegisterSellerResponse = LoginResponse;
+export type UpgradeToSellerResponse = LoginResponse;
 
 export interface RefreshResponse {
   accessToken: string;

@@ -39,6 +39,7 @@ import {
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterSellerDto } from './dto/register-seller.dto';
+import { UpgradeToSellerDto } from './dto/upgrade-to-seller.dto';
 import { REFRESH_COOKIE, type RefreshContext } from './strategies/jwt-refresh.strategy';
 
 interface RequestWithRefresh extends Request {
@@ -73,7 +74,9 @@ export class AuthController {
   @Throttle({ default: { ttl: 3600_000, limit: 10 } })
   @Post('register-seller')
   @ApiOperation({
-    summary: 'Register a seller via the multi-step modal (account + business + initial catalog)',
+    summary:
+      '[Deprecated] Register a seller in one step (account + business + catalog). Prefer registering as a buyer and calling POST /auth/upgrade-to-seller.',
+    deprecated: true,
   })
   @ApiBody({ type: RegisterSellerDto })
   @ApiOkResponse({ type: RegisterResponseDto })
@@ -82,6 +85,27 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<RegisterResponseDto> {
     const { refreshToken, ...result } = await this.authService.registerSeller(dto);
+    this.setRefreshCookie(res, refreshToken);
+    return result;
+  }
+
+  @ApiBearerAuth()
+  @Throttle({ default: { ttl: 3600_000, limit: 10 } })
+  @Post('upgrade-to-seller')
+  @ApiOperation({
+    summary:
+      'Promote the authenticated buyer to a seller (collects business details + initial catalog).',
+  })
+  @ApiBody({ type: UpgradeToSellerDto })
+  @ApiOkResponse({ type: RegisterResponseDto })
+  async upgradeToSeller(
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: UpgradeToSellerDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<RegisterResponseDto> {
+    const { refreshToken, ...result } = await this.authService.upgradeToSeller(current.id, dto);
+    // Role changed, so the previous refresh cookie now points at a stale
+    // role claim. Rotate it to keep subsequent /auth/refresh calls aligned.
     this.setRefreshCookie(res, refreshToken);
     return result;
   }

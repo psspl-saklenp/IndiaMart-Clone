@@ -27,7 +27,9 @@ class ToggleSaveDto {
 @ApiTags('Saved products')
 @ApiBearerAuth()
 @Controller('saved-products')
-@Roles(UserRole.BUYER, UserRole.ADMIN)
+// Open to every authenticated user — sellers can also wishlist products
+// since they're buyers by default in this marketplace.
+@Roles(UserRole.BUYER, UserRole.SELLER, UserRole.ADMIN)
 export class SavedProductsController {
   constructor(private readonly savedProductsService: SavedProductsService) {}
 

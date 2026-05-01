@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,10 @@ import type { RegisterPayload } from '@/types/auth';
 export function RegisterForm() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const searchParams = useSearchParams();
+  // When users click "Sell" without an account they're redirected here with
+  // ?next=sell so we can explain why they need a buyer account first.
+  const cameFromSell = searchParams?.get('next') === 'sell';
 
   const { register, error, isLoading, isAuthenticated, reset } = useAuth();
 
@@ -90,6 +94,16 @@ export function RegisterForm() {
           .
         </p>
       </div>
+
+      {cameFromSell && (
+        <div
+          role="note"
+          className="rounded-md border border-brand-200 bg-brand-50 px-3 py-2 text-xs text-brand-800"
+        >
+          Create your buyer account first — once you’re signed in you can become a seller in
+          one click from the <span className="font-medium">Sell with us</span> button.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <Input

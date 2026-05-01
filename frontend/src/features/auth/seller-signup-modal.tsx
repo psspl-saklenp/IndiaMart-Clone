@@ -1,7 +1,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -9,64 +8,54 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { Select } from '@/components/ui/select';
 import { listCategoryTree } from '@/features/categories/api';
+import { useAuth } from '@/hooks/use-auth';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { clearError, registerSellerThunk } from '@/store/slices/auth.slice';
+import { clearError, upgradeToSellerThunk } from '@/store/slices/auth.slice';
 import { closeSellerSignup } from '@/store/slices/ui.slice';
 import type { Category } from '@/types/catalog';
-import type { RegisterSellerPayload, SellerSignupProduct } from '@/types/auth';
+import type { SellerSignupProduct, UpgradeToSellerPayload } from '@/types/auth';
 
-const STEP_LABELS = [
-  'Basic account setup',
-  'Business & verification details',
-  'Catalog / product information',
-] as const;
+const STEP_LABELS = ['Business & verification', 'Catalog'] as const;
 
 const MIN_PRODUCTS = 3;
 
 interface FormState {
-  // Step 1
-  phone: string;
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  companyName: string;
+  // Step 1 — business & verification
   city: string;
   pincode: string;
-  // Step 2
-  gstNumber: string;
   panNumber: string;
-  // Step 3
+  gstNumber: string;
+  // Step 2 — catalog
   categoryId: string;
   productNames: string[];
 }
 
 const INITIAL_STATE: FormState = {
-  phone: '',
-  name: '',
-  email: '',
-  password: '',
-  confirmPassword: '',
-  companyName: '',
   city: '',
   pincode: '',
-  gstNumber: '',
   panNumber: '',
+  gstNumber: '',
   categoryId: '',
   productNames: ['', '', ''],
 };
 
 /**
- * Three-step seller registration wizard rendered as a modal. The modal is
- * mounted globally (see `Providers`) and opened by dispatching
- * `openSellerSignup` from anywhere (navbar, footers, etc.).
+ * Two-step seller upgrade wizard rendered as a modal.
+ *
+ * The modal assumes the user is already authenticated as a buyer — new
+ * visitors are funnelled through the public buyer signup first (see
+ * `useSellAction`). Existing sellers/admins skip the modal entirely.
+ *
+ * Step 1 collects only the four business/verification fields the user
+ * asked for (`city`, `pincode`, `panNumber`, `gstNumber`); step 2 mirrors
+ * the previous catalog screen (default category + ≥3 product names).
  */
 export function SellerSignupModal() {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const open = useAppSelector((s) => s.ui.isSellerSignupOpen);
   const authStatus = useAppSelector((s) => s.auth.status);
   const authError = useAppSelector((s) => s.auth.error);
+  const { user, isAuthenticated } = useAuth();
   const isSubmitting = authStatus === 'loading';
 
   const [step, setStep] = useState(0);
@@ -83,6 +72,20 @@ export function SellerSignupModal() {
       dispatch(clearError());
     }
   }, [open, dispatch]);
+
+  // Defensive guards: this modal only makes sense for an authenticated
+  // buyer. If something opens it for the wrong viewer (e.g. a stale tab,
+  // a deep link, or a state-restore), close it cleanly. We deliberately do
+  // NOT call `router.replace` here — it used to race with the buyer-area
+  // Protected redirect during the role flip, which produced a flashing
+  // screen when the user upgraded. The shared `useSellAction` hook handles
+  // routing for non-buyer viewers.
+  useEffect(() => {
+    if (!open) return;
+    if (!isAuthenticated || !user || user.role !== 'buyer') {
+      dispatch(closeSellerSignup());
+    }
+  }, [open, isAuthenticated, user, dispatch]);
 
   const { data: categoryTree } = useQuery<Category[]>({
     queryKey: ['categories', 'tree'],
@@ -129,34 +132,19 @@ export function SellerSignupModal() {
 
   function validateStep(currentStep: number): string | null {
     if (currentStep === 0) {
-      if (!form.phone.trim() || form.phone.replace(/\D/g, '').length < 7) {
-        return 'Please enter a valid mobile number';
-      }
-      if (form.name.trim().length < 2) return 'Please enter your full name';
-      if (!/^\S+@\S+\.\S+$/.test(form.email)) return 'Please enter a valid email';
-      if (form.password.length < 8) return 'Password must be at least 8 characters';
-      if (!/[A-Za-z]/.test(form.password) || !/\d/.test(form.password)) {
-        return 'Password must contain at least one letter and one number';
-      }
-      if (form.password !== form.confirmPassword) return 'Passwords do not match';
-      if (form.companyName.trim().length < 2) return 'Please enter your company name';
       if (form.pincode && !/^\d{4,8}$/.test(form.pincode)) {
         return 'Pin-code must be 4-8 digits';
+      }
+      if (form.panNumber && !/^[A-Z0-9]{8,16}$/i.test(form.panNumber.trim())) {
+        return 'PAN number looks invalid';
+      }
+      if (form.gstNumber && form.gstNumber.trim().length < 5) {
+        return 'GST number looks too short';
       }
       return null;
     }
 
     if (currentStep === 1) {
-      if (form.gstNumber && form.gstNumber.trim().length < 5) {
-        return 'GST number looks too short';
-      }
-      if (form.panNumber && !/^[A-Z0-9]{8,16}$/i.test(form.panNumber.trim())) {
-        return 'PAN number looks invalid';
-      }
-      return null;
-    }
-
-    if (currentStep === 2) {
       if (filledProductCount < MIN_PRODUCTS) {
         return `Please add at least ${MIN_PRODUCTS} product names (3+ chars each)`;
       }
@@ -183,7 +171,7 @@ export function SellerSignupModal() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const err = validateStep(2);
+    const err = validateStep(1);
     if (err) {
       setStepError(err);
       return;
@@ -197,23 +185,20 @@ export function SellerSignupModal() {
         ...(form.categoryId ? { categoryId: form.categoryId } : {}),
       }));
 
-    const payload: RegisterSellerPayload = {
-      email: form.email.trim(),
-      password: form.password,
-      name: form.name.trim(),
-      phone: form.phone.trim(),
-      companyName: form.companyName.trim(),
+    const payload: UpgradeToSellerPayload = {
       ...(form.city.trim() ? { city: form.city.trim() } : {}),
       ...(form.pincode.trim() ? { pincode: form.pincode.trim() } : {}),
-      ...(form.gstNumber.trim() ? { gstNumber: form.gstNumber.trim() } : {}),
       ...(form.panNumber.trim() ? { panNumber: form.panNumber.trim().toUpperCase() } : {}),
+      ...(form.gstNumber.trim() ? { gstNumber: form.gstNumber.trim().toUpperCase() } : {}),
       products,
     };
 
-    const result = await dispatch(registerSellerThunk(payload));
-    if (registerSellerThunk.fulfilled.match(result)) {
+    const result = await dispatch(upgradeToSellerThunk(payload));
+    if (upgradeToSellerThunk.fulfilled.match(result)) {
+      // Just close the modal — the user keeps browsing as a buyer. The
+      // "Sell" button now routes them to /seller/dashboard whenever they
+      // want to enter the seller area (handled by `useSellAction`).
       dispatch(closeSellerSignup());
-      router.replace('/seller/dashboard');
     }
   }
 
@@ -224,7 +209,7 @@ export function SellerSignupModal() {
       open={open}
       onClose={handleClose}
       title="Become a seller"
-      subtitle="Tell us about your business in three quick steps. You can polish details later."
+      subtitle="Just two quick steps — share your business details, then a few products to seed your catalog."
       widthClassName="max-w-2xl"
       footer={
         <div className="flex items-center justify-between gap-3">
@@ -291,73 +276,12 @@ export function SellerSignupModal() {
         {step === 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
-              name="phone"
-              label="Mobile number"
-              type="tel"
-              autoComplete="tel"
-              required
-              value={form.phone}
-              onChange={(e) => update('phone', e.target.value)}
-              placeholder="+91 98765 43210"
-              maxLength={20}
-            />
-            <Input
-              name="name"
-              label="Your full name"
-              required
-              autoComplete="name"
-              value={form.name}
-              onChange={(e) => update('name', e.target.value)}
-              minLength={2}
-              maxLength={120}
-            />
-            <Input
-              name="email"
-              label="Email"
-              type="email"
-              required
-              autoComplete="email"
-              value={form.email}
-              onChange={(e) => update('email', e.target.value)}
-              placeholder="you@example.com"
-              className="sm:col-span-2"
-            />
-            <Input
-              name="password"
-              label="Password"
-              type="password"
-              required
-              autoComplete="new-password"
-              value={form.password}
-              onChange={(e) => update('password', e.target.value)}
-              minLength={8}
-              maxLength={128}
-              hint="Min 8 chars; must contain a letter and a number."
-            />
-            <Input
-              name="confirmPassword"
-              label="Confirm password"
-              type="password"
-              required
-              autoComplete="new-password"
-              value={form.confirmPassword}
-              onChange={(e) => update('confirmPassword', e.target.value)}
-            />
-            <Input
-              name="companyName"
-              label="Company name"
-              required
-              value={form.companyName}
-              onChange={(e) => update('companyName', e.target.value)}
-              maxLength={180}
-              className="sm:col-span-2"
-            />
-            <Input
               name="city"
               label="City"
               value={form.city}
               onChange={(e) => update('city', e.target.value)}
               maxLength={120}
+              placeholder="Mumbai"
             />
             <Input
               name="pincode"
@@ -367,20 +291,7 @@ export function SellerSignupModal() {
               inputMode="numeric"
               maxLength={12}
               hint="4-8 digit postal code"
-            />
-          </div>
-        )}
-
-        {step === 1 && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input
-              name="gstNumber"
-              label="GST Number"
-              value={form.gstNumber}
-              onChange={(e) => update('gstNumber', e.target.value.toUpperCase())}
-              maxLength={32}
-              placeholder="27ABCDE1234F1Z5"
-              hint="Optional. You can add this later from your seller profile."
+              placeholder="400001"
             />
             <Input
               name="panNumber"
@@ -391,14 +302,24 @@ export function SellerSignupModal() {
               placeholder="ABCDE1234F"
               hint="Optional. 10-character PAN."
             />
+            <Input
+              name="gstNumber"
+              label="GST Number"
+              value={form.gstNumber}
+              onChange={(e) => update('gstNumber', e.target.value.toUpperCase())}
+              maxLength={32}
+              placeholder="27ABCDE1234F1Z5"
+              hint="Optional. You can add this later from your seller profile."
+            />
             <p className="text-xs text-ink-500 sm:col-span-2">
-              These details help buyers trust your listings. They are never displayed
-              publicly without your consent.
+              All fields are optional but recommended — they help buyers trust your listings
+              and unlock GST-ready quotes. They are never displayed publicly without your
+              consent.
             </p>
           </div>
         )}
 
-        {step === 2 && (
+        {step === 1 && (
           <div className="space-y-4">
             <Select
               name="categoryId"

@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { type WhereOptions } from 'sequelize';
+import { Op, type WhereOptions } from 'sequelize';
 
 import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { buildMeta, type PaginatedResult } from '../../common/utils/pagination';
@@ -48,7 +48,10 @@ export class RequirementsService {
     return this.findById(created.id);
   }
 
-  async list(query: ListRequirementsQueryDto): Promise<PaginatedResult<RequirementDto>> {
+  async list(
+    query: ListRequirementsQueryDto,
+    options: { excludeBuyerId?: string } = {},
+  ): Promise<PaginatedResult<RequirementDto>> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const offset = (page - 1) * limit;
@@ -57,6 +60,13 @@ export class RequirementsService {
       status: query.status ?? RequirementStatus.OPEN,
     };
     if (query.categoryId) (where as Record<string, unknown>).categoryId = query.categoryId;
+    if (options.excludeBuyerId) {
+      // Sellers viewing their leads feed shouldn't see requirements they
+      // posted themselves (every user is a buyer by default in this app).
+      (where as Record<string, unknown>).buyerId = {
+        [Op.ne]: options.excludeBuyerId,
+      };
+    }
 
     const { rows, count } = await this.requirementModel.findAndCountAll({
       where,
@@ -136,8 +146,12 @@ export class RequirementsService {
       throw new BadRequestException('You cannot respond to your own requirement.');
     }
 
-    // Spoof the buyer-side context for InquiriesService.create so the
-    // resulting inquiry sits in the buyer's inbox properly.
+    // We model the conversation as a regular inquiry so the existing
+    // buyer/seller inboxes "just work". Authorship matters though: the
+    // first thread message is the buyer's original requirement (so it
+    // shows up under the buyer's name), and the seller's quote is added
+    // as a follow-up message attributed to the seller — matching what
+    // both sides actually wrote.
     const buyerCtx: AuthenticatedUser = {
       id: row.buyerId,
       email: '',
@@ -146,11 +160,16 @@ export class RequirementsService {
     const inquiry = await this.inquiriesService.create(buyerCtx, {
       sellerId: seller.id,
       subject: row.title,
-      message: `Buyer requirement: ${row.description}\n\n— Quoting supplier: ${trimmed}`,
+      message: row.description,
       ...(row.quantity ? { quantity: row.quantity } : {}),
       ...(row.unit ? { unit: row.unit } : {}),
       ...(row.expectedPrice ? { expectedPrice: Number(row.expectedPrice) } : {}),
     });
+
+    // Now add the seller's actual quote as a second message authored by
+    // the seller. This bumps the inquiry status to `responded` (see
+    // InquiriesService.addMessage) and keeps message authorship truthful.
+    await this.inquiriesService.addMessage(inquiry.id, seller, { message: trimmed });
 
     row.responseCount += 1;
     await row.save();

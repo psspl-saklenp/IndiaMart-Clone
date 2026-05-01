@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { type WhereOptions } from 'sequelize';
+import { Op, type WhereOptions } from 'sequelize';
 
 import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { buildMeta, type PaginatedResult } from '../../common/utils/pagination';
@@ -97,9 +97,28 @@ export class InquiriesService {
     const offset = (page - 1) * limit;
 
     const where: WhereOptions<Inquiry> = {};
-    if (user.role === UserRole.BUYER) (where as Record<string, unknown>).buyerId = user.id;
-    else if (user.role === UserRole.SELLER) (where as Record<string, unknown>).sellerId = user.id;
-    // Admin sees all — no filter applied.
+
+    // Filtering rules:
+    //   - Admins see every inquiry (no filter applied).
+    //   - Otherwise, filter by which "side" of the conversation the viewer is on.
+    //     * `side=buyer`  → inquiries where buyerId  = viewer.id
+    //     * `side=seller` → inquiries where sellerId = viewer.id
+    //     * no `side`     → either side (buyerId OR sellerId = viewer.id)
+    //   This lets a single user that is both a buyer and a seller see all
+    //   their conversations on /me/inquiries (side=buyer) or only the
+    //   supplier-facing ones on /seller/inquiries (side=seller).
+    if (user.role !== UserRole.ADMIN) {
+      if (query.side === 'buyer') {
+        (where as Record<string, unknown>).buyerId = user.id;
+      } else if (query.side === 'seller') {
+        (where as Record<string, unknown>).sellerId = user.id;
+      } else {
+        (where as Record<string, unknown>)[Op.or as unknown as string] = [
+          { buyerId: user.id },
+          { sellerId: user.id },
+        ];
+      }
+    }
 
     if (query.status) (where as Record<string, unknown>).status = query.status;
 
@@ -364,5 +383,4 @@ export class InquiriesService {
     const img = product.images?.find((i) => i.isPrimary) ?? product.images?.[0];
     return img?.url ?? null;
   }
-
 }

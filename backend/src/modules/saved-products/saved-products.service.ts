@@ -31,9 +31,7 @@ export class SavedProductsService {
 
     // The product list endpoint isn't keyed by id; filter client-side and preserve save order.
     const byId = new Map(result.data.map((p) => [p.id, p]));
-    return productIds
-      .map((id) => byId.get(id))
-      .filter((p): p is ProductResponseDto => Boolean(p));
+    return productIds.map((id) => byId.get(id)).filter((p): p is ProductResponseDto => Boolean(p));
   }
 
   async listIds(buyerId: string): Promise<string[]> {

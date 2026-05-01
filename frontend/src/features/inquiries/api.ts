@@ -13,6 +13,12 @@ export interface ListInquiriesParams {
   page?: number;
   limit?: number;
   status?: InquiryStatus;
+  /**
+   * Restrict the listing to one side of the conversation. Omit to fetch
+   * every inquiry the viewer participates in (useful for admins or
+   * combined inboxes).
+   */
+  side?: 'buyer' | 'seller';
 }
 
 export async function listInquiries(

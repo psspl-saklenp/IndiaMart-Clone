@@ -37,6 +37,11 @@ export function InquiryList({ viewer }: Props) {
       listInquiries({
         page,
         limit: 20,
+        // Tell the backend which side the viewer is on. Required because a
+        // user can be both a buyer and a seller — without this filter the
+        // /me/inquiries page would also surface conversations where the
+        // viewer is the supplier (and vice-versa).
+        side: viewer,
         ...(statusFilter ? { status: statusFilter } : {}),
       }),
     placeholderData: keepPreviousData,
