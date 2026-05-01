@@ -1,10 +1,16 @@
 import Link from 'next/link';
 
+import { SellerSignupTrigger } from '@/features/auth/seller-signup-trigger';
+
 const CURRENT_YEAR = new Date().getFullYear();
+
+type FooterLinkItem =
+  | { kind?: 'link'; label: string; href: string }
+  | { kind: 'sellerSignup'; label: string };
 
 interface FooterColumn {
   title?: string;
-  links: { label: string; href: string }[];
+  links: FooterLinkItem[];
 }
 
 const COLUMNS: FooterColumn[] = [
@@ -33,7 +39,7 @@ const COLUMNS: FooterColumn[] = [
   {
     title: 'Suppliers Tool Kit',
     links: [
-      { label: 'Sell on our marketplace', href: '/register?role=seller' },
+      { kind: 'sellerSignup', label: 'Sell on our marketplace' },
       { label: 'Latest BuyLeads', href: '/seller/leads' },
       { label: 'Learning Centre', href: '#' },
       { label: 'Ship With Us', href: '#' },
@@ -94,9 +100,15 @@ function FooterColumnView({ column }: { column: FooterColumn }) {
       <ul className={column.title ? 'mt-3 space-y-1.5 text-sm' : 'space-y-1.5 text-sm'}>
         {column.links.map((link) => (
           <li key={link.label}>
-            <Link href={link.href} className="text-ink-600 hover:text-ink-900">
-              {link.label}
-            </Link>
+            {link.kind === 'sellerSignup' ? (
+              <SellerSignupTrigger className="text-ink-600 hover:text-ink-900">
+                {link.label}
+              </SellerSignupTrigger>
+            ) : (
+              <Link href={link.href} className="text-ink-600 hover:text-ink-900">
+                {link.label}
+              </Link>
+            )}
           </li>
         ))}
       </ul>

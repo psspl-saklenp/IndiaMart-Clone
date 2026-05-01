@@ -58,6 +58,9 @@ export class MyProfileDto {
   @ApiProperty({ required: false, nullable: true }) establishedYear!: number | null;
   @ApiProperty({ required: false, nullable: true }) description!: string | null;
   @ApiProperty({ required: false, nullable: true }) gstNumber!: string | null;
+  @ApiProperty({ required: false, nullable: true }) panNumber!: string | null;
+  @ApiProperty({ required: false, nullable: true }) city!: string | null;
+  @ApiProperty({ required: false, nullable: true }) pincode!: string | null;
   @ApiProperty({ required: false, nullable: true }) logoUrl!: string | null;
   @ApiProperty({ required: false, nullable: true }) bannerUrl!: string | null;
   @ApiProperty() isVerifiedSupplier!: boolean;
@@ -97,6 +100,24 @@ export class UpdateMyProfileDto {
   @IsString()
   @Length(0, 32)
   gstNumber?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @Length(0, 16)
+  panNumber?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @Length(0, 120)
+  city?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @Length(0, 12)
+  pincode?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

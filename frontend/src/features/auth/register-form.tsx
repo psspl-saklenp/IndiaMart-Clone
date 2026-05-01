@@ -1,30 +1,31 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
+import { useAppDispatch } from '@/store';
 import { registerThunk } from '@/store/slices/auth.slice';
-import type { RegisterPayload, RegisterRole } from '@/types/auth';
+import { openSellerSignup } from '@/store/slices/ui.slice';
+import type { RegisterPayload } from '@/types/auth';
 
-const ROLE_LABEL: Record<RegisterRole, string> = {
-  buyer: 'I want to buy',
-  seller: 'I want to sell',
-};
-
+/**
+ * Buyer-only signup form.
+ *
+ * Sellers go through the dedicated 3-step modal opened from the "Sell with
+ * us" button in the header (or the "Sell on..." links in the footers). The
+ * role toggle that used to live here was removed so the public /register
+ * page captures only buyer accounts.
+ */
 export function RegisterForm() {
   const router = useRouter();
-  const params = useSearchParams();
-  const initialRole = (params.get('role') as RegisterRole | null) ?? 'buyer';
+  const dispatch = useAppDispatch();
 
   const { register, error, isLoading, isAuthenticated, reset } = useAuth();
 
-  const [role, setRole] = useState<RegisterRole>(
-    initialRole === 'seller' ? 'seller' : 'buyer',
-  );
   const [name, setName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
@@ -62,10 +63,9 @@ export function RegisterForm() {
       email,
       password,
       name,
-      role,
+      role: 'buyer',
       ...(phone ? { phone } : {}),
-      ...(role === 'seller' && companyName ? { companyName } : {}),
-      ...(role === 'buyer' && companyName ? { companyName } : {}),
+      ...(companyName ? { companyName } : {}),
     };
 
     const result = await register(payload);
@@ -77,26 +77,18 @@ export function RegisterForm() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight text-ink-900">Create your account</h1>
-        <p className="text-sm text-ink-500">Join the marketplace as a buyer or seller.</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 rounded-md border border-ink-200 bg-ink-50 p-1">
-        {(Object.keys(ROLE_LABEL) as RegisterRole[]).map((r) => (
+        <h1 className="text-2xl font-bold tracking-tight text-ink-900">Create your buyer account</h1>
+        <p className="text-sm text-ink-500">
+          Discover suppliers and request quotes. Want to sell instead?{' '}
           <button
-            key={r}
             type="button"
-            onClick={() => setRole(r)}
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              role === r
-                ? 'bg-white text-brand-700 shadow-sm'
-                : 'text-ink-600 hover:text-ink-800'
-            }`}
-            aria-pressed={role === r}
+            onClick={() => dispatch(openSellerSignup())}
+            className="font-medium text-brand-600 hover:underline"
           >
-            {ROLE_LABEL[r]}
+            Register as a seller
           </button>
-        ))}
+          .
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -113,8 +105,7 @@ export function RegisterForm() {
 
         <Input
           name="companyName"
-          label={role === 'seller' ? 'Company name' : 'Company name (optional)'}
-          required={role === 'seller'}
+          label="Company name (optional)"
           value={companyName}
           onChange={(e) => setCompanyName(e.target.value)}
           maxLength={180}

@@ -2,9 +2,12 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
+import { getConnectionToken, getModelToken } from '@nestjs/sequelize';
 import * as bcrypt from 'bcrypt';
 
 import { AuthService } from './auth.service';
+import { Category } from '../categories/category.model';
+import { Product } from '../products/product.model';
 import { UsersService } from '../users/users.service';
 import { UserRole } from '../users/enums/user-role.enum';
 import type { JwtRefreshPayload } from './types/jwt-payload.interface';
@@ -62,6 +65,15 @@ describe('AuthService', () => {
             }),
           },
         },
+        {
+          // The seller signup path injects the Sequelize connection to wrap
+          // user/profile/product creation in a transaction. Existing register/
+          // login/refresh tests don't exercise it, so an empty stub is enough.
+          provide: getConnectionToken(),
+          useValue: { transaction: jest.fn() },
+        },
+        { provide: getModelToken(Category), useValue: {} },
+        { provide: getModelToken(Product), useValue: {} },
       ],
     }).compile();
 

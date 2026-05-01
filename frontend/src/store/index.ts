@@ -2,15 +2,17 @@ import { configureStore } from '@reduxjs/toolkit';
 import { type TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
 import { authReducer } from './slices/auth.slice';
+import { uiReducer } from './slices/ui.slice';
 
 /**
  * Root Redux store.
- * Phase 2: auth slice (current user + token bookkeeping).
- * Future phases add: ui, compare, etc.
+ * - auth: current user + token bookkeeping.
+ * - ui: cross-component UI state (e.g. the seller signup modal).
  */
 export const store = configureStore({
   reducer: {
     auth: authReducer,
+    ui: uiReducer,
   },
   devTools: process.env.NEXT_PUBLIC_ENV !== 'production',
 });

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { SellerSignupTrigger } from '@/features/auth/seller-signup-trigger';
 import { listCategoryTree } from '@/features/categories/api';
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -35,14 +36,28 @@ export async function Footer() {
             ]}
           />
 
-          <FooterColumn
-            title="For suppliers"
-            links={[
-              { label: 'Sell on indiamart-clone', href: '/register?role=seller' },
-              { label: 'Seller dashboard', href: '/seller/products' },
-              { label: 'Pricing', href: '/' },
-            ]}
-          />
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700">
+              For suppliers
+            </h3>
+            <ul className="mt-3 space-y-1.5 text-sm">
+              <li>
+                <SellerSignupTrigger className="text-ink-500 hover:text-ink-900">
+                  Sell on indiamart-clone
+                </SellerSignupTrigger>
+              </li>
+              <li>
+                <Link href="/seller/products" className="text-ink-500 hover:text-ink-900">
+                  Seller dashboard
+                </Link>
+              </li>
+              <li>
+                <Link href="/" className="text-ink-500 hover:text-ink-900">
+                  Pricing
+                </Link>
+              </li>
+            </ul>
+          </div>
 
           <FooterColumn
             title="Top categories"

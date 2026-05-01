@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
 
 import { AuthBootstrap } from '@/features/auth/auth-bootstrap';
+import { SellerSignupModal } from '@/features/auth/seller-signup-modal';
 import { createQueryClient } from '@/lib/query-client';
 import { store } from '@/store';
 
@@ -19,6 +20,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <AuthBootstrap />
         {children}
+        {/* Global modal: opened by dispatching openSellerSignup from any button. */}
+        <SellerSignupModal />
         {process.env.NEXT_PUBLIC_ENV !== 'production' && (
           <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
         )}

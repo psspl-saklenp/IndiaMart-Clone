@@ -1,10 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { useAppDispatch } from '@/store';
+import { openSellerSignup } from '@/store/slices/ui.slice';
 
 /**
  * Top app bar used inside the buyer area only.
@@ -16,8 +19,21 @@ import { cn } from '@/lib/utils';
 export function BuyerAppBar() {
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const dispatch = useAppDispatch();
+  const router = useRouter();
 
   const firstName = user?.name?.split(' ')[0] ?? 'there';
+  // Buyers/admins land here. Buyers can't access /seller/dashboard, so they
+  // get the seller signup modal; admins (who already have seller access) go
+  // straight to the dashboard.
+  const isAlreadySeller = user?.role === 'seller' || user?.role === 'admin';
+  function handleSellClick() {
+    if (isAlreadySeller) {
+      router.push('/seller/dashboard');
+    } else {
+      dispatch(openSellerSignup());
+    }
+  }
 
   return (
     <header className="sticky top-0 z-30 w-full bg-[var(--color-im-navy-800)] text-white shadow-md">
@@ -36,7 +52,7 @@ export function BuyerAppBar() {
         </Link>
 
         <div className="ml-auto flex items-center gap-1">
-          <UtilityLink href="/seller/dashboard" icon={<IconStorefront />} label="Sell" />
+          <UtilityButton onClick={handleSellClick} icon={<IconStorefront />} label="Sell" />
           <UtilityLink href="/me/inquiries" icon={<IconChat />} label="Messages" />
           <UtilityLink href="#" icon={<IconHelp />} label="Help" />
           <UtilityLink href="#" icon={<IconGlobe />} label="Exporters" />
@@ -119,6 +135,27 @@ function UtilityLink({
       <span aria-hidden>{icon}</span>
       <span>{label}</span>
     </Link>
+  );
+}
+
+function UtilityButton({
+  onClick,
+  icon,
+  label,
+}: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="hidden flex-col items-center justify-center gap-0.5 rounded-md px-3 py-1 text-[11px] font-medium text-white/90 hover:bg-white/10 sm:flex"
+    >
+      <span aria-hidden>{icon}</span>
+      <span>{label}</span>
+    </button>
   );
 }
 

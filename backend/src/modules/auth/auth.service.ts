@@ -6,11 +6,17 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'node:crypto';
 import type { SignOptions } from 'jsonwebtoken';
+import type { Transaction } from 'sequelize';
+import type { Sequelize } from 'sequelize-typescript';
 
 import type { AppConfig } from '../../config/configuration';
+import { uniqueSlug } from '../../common/utils/slugify';
+import { Category } from '../categories/category.model';
+import { Product } from '../products/product.model';
 import type { User } from '../users/user.model';
 import { UserRole } from '../users/enums/user-role.enum';
 import { UsersService } from '../users/users.service';
@@ -21,6 +27,7 @@ import type {
 } from './dto/auth-response.dto';
 import type { LoginDto } from './dto/login.dto';
 import type { RegisterDto } from './dto/register.dto';
+import type { RegisterSellerDto } from './dto/register-seller.dto';
 import type { JwtPayload, JwtRefreshPayload } from './types/jwt-payload.interface';
 
 const BCRYPT_ROUNDS = 12;
@@ -39,6 +46,9 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService<AppConfig, true>,
+    @InjectConnection() private readonly sequelize: Sequelize,
+    @InjectModel(Category) private readonly categoryModel: typeof Category,
+    @InjectModel(Product) private readonly productModel: typeof Product,
   ) {}
 
   async register(dto: RegisterDto): Promise<RegisterResponseDto & { refreshToken: string }> {
@@ -56,6 +66,84 @@ export class AuthService {
       phone: dto.phone ?? null,
       companyName: dto.companyName ?? null,
       gstNumber: dto.gstNumber ?? null,
+    });
+
+    await this.usersService.updateLastLogin(user.id);
+
+    const tokens = await this.issueTokens(user);
+    return {
+      user: this.toPublicUser(user),
+      accessToken: tokens.accessToken,
+      expiresIn: tokens.accessExpiresIn,
+      refreshToken: tokens.refreshToken,
+    };
+  }
+
+  /**
+   * Multi-step seller signup invoked from the modal in the public navbar.
+   * Wraps user creation, profile creation, and the seed product list in a
+   * Sequelize transaction so a partial failure rolls everything back.
+   */
+  async registerSeller(
+    dto: RegisterSellerDto,
+  ): Promise<RegisterResponseDto & { refreshToken: string }> {
+    if (await this.usersService.emailExists(dto.email)) {
+      throw new ConflictException('An account with that email already exists');
+    }
+
+    const passwordHash = await this.hashPassword(dto.password);
+
+    const user = await this.sequelize.transaction(async (transaction) => {
+      const created = await this.usersService.createWithProfile(
+        {
+          email: dto.email,
+          passwordHash,
+          name: dto.name,
+          role: UserRole.SELLER,
+          phone: dto.phone,
+          companyName: dto.companyName,
+          gstNumber: dto.gstNumber ?? null,
+          panNumber: dto.panNumber ?? null,
+          city: dto.city ?? null,
+          pincode: dto.pincode ?? null,
+        },
+        transaction,
+      );
+
+      // Resolve a fallback category once so every product without an
+      // explicit `categoryId` lands in the same bucket.
+      const fallbackCategory = await this.resolveFallbackCategory(transaction);
+
+      for (const item of dto.products) {
+        const categoryId = item.categoryId ?? fallbackCategory.id;
+        const slug = await uniqueSlug(item.name, async (candidate) => {
+          const count = await this.productModel.count({
+            where: { slug: candidate },
+            transaction,
+          });
+          return count > 0;
+        });
+        await this.productModel.create(
+          {
+            sellerId: created.id,
+            categoryId,
+            name: item.name,
+            slug,
+            description: item.name,
+            price: (item.price ?? 0).toFixed(2),
+            currency: 'INR',
+            minOrderQty: 1,
+            unit: 'piece',
+            stockStatus: 'in_stock',
+            // Drafts: keep them out of the public catalog until the seller
+            // edits them with real descriptions / prices.
+            isActive: false,
+          } as Product,
+          { transaction },
+        );
+      }
+
+      return created;
     });
 
     await this.usersService.updateLastLogin(user.id);
@@ -155,6 +243,27 @@ export class AuthService {
 
   private async hashPassword(plain: string): Promise<string> {
     return bcrypt.hash(plain, BCRYPT_ROUNDS);
+  }
+
+  /**
+   * Returns the seeded `general` fallback category, creating it if missing
+   * (e.g. on a fresh dev DB without the seeders run yet).
+   */
+  private async resolveFallbackCategory(transaction: Transaction): Promise<Category> {
+    const existing = await this.categoryModel.findOne({
+      where: { slug: 'general' },
+      transaction,
+    });
+    if (existing) return existing;
+
+    return this.categoryModel.create(
+      {
+        name: 'General',
+        slug: 'general',
+        position: 999,
+      } as Category,
+      { transaction },
+    );
   }
 
   /**

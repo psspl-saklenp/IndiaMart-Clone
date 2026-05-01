@@ -27,6 +27,25 @@ export interface RegisterPayload {
   gstNumber?: string;
 }
 
+export interface SellerSignupProduct {
+  name: string;
+  categoryId?: string;
+  price?: number;
+}
+
+export interface RegisterSellerPayload {
+  email: string;
+  password: string;
+  name: string;
+  phone: string;
+  companyName: string;
+  city?: string;
+  pincode?: string;
+  gstNumber?: string;
+  panNumber?: string;
+  products: SellerSignupProduct[];
+}
+
 export interface LoginResponse {
   user: AuthUser;
   accessToken: string;
@@ -34,6 +53,7 @@ export interface LoginResponse {
 }
 
 export type RegisterResponse = LoginResponse;
+export type RegisterSellerResponse = LoginResponse;
 
 export interface RefreshResponse {
   accessToken: string;

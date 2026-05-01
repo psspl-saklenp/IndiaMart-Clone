@@ -8,12 +8,15 @@ import { SearchBar } from '@/components/layout/search-bar';
 import { Button } from '@/components/ui/button';
 import { useInquiryCounts } from '@/features/inquiries/use-inquiry-counts';
 import { useAuth } from '@/hooks/use-auth';
+import { useAppDispatch } from '@/store';
+import { openSellerSignup } from '@/store/slices/ui.slice';
 import type { Role } from '@/types/api';
 
 export function Navbar() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { data: counts } = useInquiryCounts();
   const [menuOpen, setMenuOpen] = useState(false);
+  const dispatch = useAppDispatch();
 
   const sellerCount = counts?.asSeller ?? 0;
   const buyerCount = counts?.asBuyer ?? 0;
@@ -28,9 +31,13 @@ export function Navbar() {
             Get best price
           </Link>
           <span className="text-ink-300">|</span>
-          <Link href="/register?role=seller" className="hover:text-ink-900">
+          <button
+            type="button"
+            onClick={() => dispatch(openSellerSignup())}
+            className="hover:text-ink-900"
+          >
             Sell with us
-          </Link>
+          </button>
           <span className="text-ink-300">|</span>
           <a href="http://localhost:3001/api/docs" target="_blank" rel="noreferrer noopener" className="hover:text-ink-900">
             API

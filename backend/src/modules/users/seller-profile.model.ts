@@ -48,6 +48,18 @@ export class SellerProfile extends Model<SellerProfile> {
   declare gstNumber: string | null;
 
   @AllowNull(true)
+  @Column({ field: 'pan_number', type: DataType.STRING(16) })
+  declare panNumber: string | null;
+
+  @AllowNull(true)
+  @Column({ field: 'city', type: DataType.STRING(120) })
+  declare city: string | null;
+
+  @AllowNull(true)
+  @Column({ field: 'pincode', type: DataType.STRING(12) })
+  declare pincode: string | null;
+
+  @AllowNull(true)
   @Column({ field: 'established_year', type: DataType.INTEGER })
   declare establishedYear: number | null;
 

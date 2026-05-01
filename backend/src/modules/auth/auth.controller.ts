@@ -38,6 +38,7 @@ import {
 } from './dto/auth-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RegisterSellerDto } from './dto/register-seller.dto';
 import { REFRESH_COOKIE, type RefreshContext } from './strategies/jwt-refresh.strategy';
 
 interface RequestWithRefresh extends Request {
@@ -64,6 +65,23 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<RegisterResponseDto> {
     const { refreshToken, ...result } = await this.authService.register(dto);
+    this.setRefreshCookie(res, refreshToken);
+    return result;
+  }
+
+  @Public()
+  @Throttle({ default: { ttl: 3600_000, limit: 10 } })
+  @Post('register-seller')
+  @ApiOperation({
+    summary: 'Register a seller via the multi-step modal (account + business + initial catalog)',
+  })
+  @ApiBody({ type: RegisterSellerDto })
+  @ApiOkResponse({ type: RegisterResponseDto })
+  async registerSeller(
+    @Body() dto: RegisterSellerDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<RegisterResponseDto> {
+    const { refreshToken, ...result } = await this.authService.registerSeller(dto);
     this.setRefreshCookie(res, refreshToken);
     return result;
   }

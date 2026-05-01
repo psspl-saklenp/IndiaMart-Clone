@@ -2,7 +2,12 @@ import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/tool
 
 import * as authApi from '@/features/auth/api';
 import { setAccessToken } from '@/lib/axios';
-import type { AuthUser, LoginPayload, RegisterPayload } from '@/types/auth';
+import type {
+  AuthUser,
+  LoginPayload,
+  RegisterPayload,
+  RegisterSellerPayload,
+} from '@/types/auth';
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
@@ -43,6 +48,20 @@ export const registerThunk = createAsyncThunk<AuthUser, RegisterPayload, { rejec
     }
   },
 );
+
+export const registerSellerThunk = createAsyncThunk<
+  AuthUser,
+  RegisterSellerPayload,
+  { rejectValue: string }
+>('auth/registerSeller', async (payload, { rejectWithValue }) => {
+  try {
+    const res = await authApi.registerSeller(payload);
+    setAccessToken(res.accessToken);
+    return res.user;
+  } catch (err) {
+    return rejectWithValue(err instanceof Error ? err.message : 'Seller registration failed');
+  }
+});
 
 /**
  * Hydrates `state.auth` from the backend if a refresh-token cookie is valid.
@@ -114,6 +133,13 @@ const authSlice = createSlice({
       })
       .addCase(registerThunk.fulfilled, handleAuthSuccess)
       .addCase(registerThunk.rejected, handleAuthFailure)
+
+      .addCase(registerSellerThunk.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(registerSellerThunk.fulfilled, handleAuthSuccess)
+      .addCase(registerSellerThunk.rejected, handleAuthFailure)
 
       .addCase(hydrateThunk.pending, (state) => {
         state.status = 'loading';

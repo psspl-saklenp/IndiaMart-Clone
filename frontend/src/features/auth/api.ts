@@ -6,6 +6,8 @@ import type {
   RefreshResponse,
   RegisterPayload,
   RegisterResponse,
+  RegisterSellerPayload,
+  RegisterSellerResponse,
 } from '@/types/auth';
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
@@ -15,6 +17,13 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
 
 export async function register(payload: RegisterPayload): Promise<RegisterResponse> {
   const { data } = await api.post<RegisterResponse>('/auth/register', payload);
+  return data;
+}
+
+export async function registerSeller(
+  payload: RegisterSellerPayload,
+): Promise<RegisterSellerResponse> {
+  const { data } = await api.post<RegisterSellerResponse>('/auth/register-seller', payload);
   return data;
 }
 

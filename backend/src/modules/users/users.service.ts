@@ -16,6 +16,9 @@ export interface CreateUserInput {
   phone?: string | null;
   companyName?: string | null;
   gstNumber?: string | null;
+  panNumber?: string | null;
+  city?: string | null;
+  pincode?: string | null;
 }
 
 @Injectable()
@@ -28,14 +31,15 @@ export class UsersService {
     @InjectModel(SellerProfile) private readonly sellerProfileModel: typeof SellerProfile,
   ) {}
 
-  findById(id: string): Promise<User | null> {
+  findById(id: string, transaction?: Transaction): Promise<User | null> {
     return this.userModel.findByPk(id, {
       include: [BuyerProfile, SellerProfile],
+      transaction,
     });
   }
 
-  async findByIdOrFail(id: string): Promise<User> {
-    const user = await this.findById(id);
+  async findByIdOrFail(id: string, transaction?: Transaction): Promise<User> {
+    const user = await this.findById(id, transaction);
     if (!user) {
       throw new NotFoundException(`User ${id} not found`);
     }
@@ -54,7 +58,7 @@ export class UsersService {
    * Admin users are created without a profile.
    */
   async createWithProfile(input: CreateUserInput, transaction?: Transaction): Promise<User> {
-    const { companyName, gstNumber, ...userFields } = input;
+    const { companyName, gstNumber, panNumber, city, pincode, ...userFields } = input;
 
     const user = await this.userModel.create(
       {
@@ -88,14 +92,20 @@ export class UsersService {
           companyName: seedName,
           slug,
           gstNumber: gstNumber ?? null,
+          panNumber: panNumber ?? null,
+          city: city ?? null,
+          pincode: pincode ?? null,
         } as SellerProfile,
         { transaction },
       );
     }
 
     this.logger.log(`Created ${input.role} user ${user.id}`);
-    // Reload with profiles
-    return this.findByIdOrFail(user.id);
+    // Reload with profiles. We MUST pass the active transaction here —
+    // otherwise the read happens on a separate connection and cannot see
+    // the just-created row (the wrapping transaction in registerSeller is
+    // still uncommitted), which surfaces as a misleading 404.
+    return this.findByIdOrFail(user.id, transaction);
   }
 
   async updateLastLogin(userId: string): Promise<void> {
