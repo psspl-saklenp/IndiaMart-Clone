@@ -44,6 +44,52 @@
   --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.08);
   --shadow-card-hover: 0 6px 12px -2px rgb(15 23 42 / 0.12), 0 2px 4px -2px rgb(15 23 42 / 0.08);
   --shadow-pop: 0 12px 24px -8px rgb(15 23 42 / 0.18);
+
+  /* ----------------------------------------------------------------------
+     Buyer-area palette
+     A separate set of tokens used only inside `(buyer)/*` routes so the
+     public marketplace keeps its warm-orange identity.
+  ---------------------------------------------------------------------- */
+  /* Deep navy/indigo — used by the buyer-area top app bar and accents. */
+  --color-im-navy-50: #eef2ff;
+  --color-im-navy-100: #e0e7ff;
+  --color-im-navy-200: #c7d2fe;
+  --color-im-navy-300: #a5b4fc;
+  --color-im-navy-400: #818cf8;
+  --color-im-navy-500: #6366f1;
+  --color-im-navy-600: #4f46e5;
+  --color-im-navy-700: #4338ca;
+  --color-im-navy-800: #3730a3;
+  --color-im-navy-900: #312e81;
+
+  /* Teal / sea-green — primary CTA in the buyer area (Search, Get Quotes). */
+  --color-im-teal-50: #f0fdfa;
+  --color-im-teal-100: #ccfbf1;
+  --color-im-teal-200: #99f6e4;
+  --color-im-teal-300: #5eead4;
+  --color-im-teal-400: #2dd4bf;
+  --color-im-teal-500: #14b8a6;
+  --color-im-teal-600: #0d9488;
+  --color-im-teal-700: #0f766e;
+  --color-im-teal-800: #115e59;
+  --color-im-teal-900: #134e4a;
+
+  /* Indigo — secondary CTA (Post RFQ). */
+  --color-im-indigo-50: #eef2ff;
+  --color-im-indigo-100: #e0e7ff;
+  --color-im-indigo-500: #6366f1;
+  --color-im-indigo-600: #4f46e5;
+  --color-im-indigo-700: #4338ca;
+
+  /* Pastel accents for the four "Your Activity" tiles. */
+  --color-im-tile-sky-bg: #eff6ff;
+  --color-im-tile-sky-fg: #1d4ed8;
+  --color-im-tile-emerald-bg: #ecfdf5;
+  --color-im-tile-emerald-fg: #047857;
+  --color-im-tile-rose-bg: #fff1f2;
+  --color-im-tile-rose-fg: #be123c;
+  --color-im-tile-amber-bg: #fffbeb;
+  --color-im-tile-amber-fg: #b45309;
 }
 
 /* Base resets */
