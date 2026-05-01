@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 
+import { SearchBar } from '@/components/layout/search-bar';
 import { useSellAction } from '@/features/auth/use-sell-action';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,21 @@ export function BuyerAppBar() {
             indiamart-<span className="text-amber-300">clone</span>
           </span>
         </Link>
+
+        {/* Inline search so the discovery flow (category browse, product
+            search, send inquiry) is reachable from anywhere in the buyer
+            shell, not just the dashboard. Hidden on mobile to keep the bar
+            compact — the dashboard's `DashboardSearch` still covers small
+            screens. */}
+        <div className="hidden min-w-0 flex-1 max-w-xl md:block">
+          <Suspense
+            fallback={
+              <div className="h-9 rounded-md border border-white/20 bg-white/10" />
+            }
+          >
+            <SearchBar />
+          </Suspense>
+        </div>
 
         <div className="ml-auto flex items-center gap-1">
           <UtilityButton onClick={handleSellClick} icon={<IconStorefront />} label="Sell" />

@@ -1,12 +1,12 @@
 import Link from 'next/link';
 
-import { Navbar } from '@/components/layout/navbar';
+import { SellerTopBar } from '@/components/layout/seller-top-bar';
 import { Protected } from '@/features/auth/protected';
 
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   return (
     <Protected allow={['seller', 'admin']}>
-      <Navbar />
+      <SellerTopBar />
       <div className="mx-auto max-w-6xl px-4 py-8">
         <aside className="mb-6 flex flex-wrap items-center gap-3 border-b border-ink-200 pb-4">
           <p className="text-xs uppercase tracking-wide text-ink-500">Seller</p>
