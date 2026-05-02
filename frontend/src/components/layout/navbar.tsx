@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/button';
 import { useSellAction } from '@/features/auth/use-sell-action';
 import { useInquiryCounts } from '@/features/inquiries/use-inquiry-counts';
 import { useAuth } from '@/hooks/use-auth';
+import { useLogout } from '@/hooks/use-logout';
 import type { Role } from '@/types/api';
 
 export function Navbar() {
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const handleLogout = useLogout();
   const { data: counts } = useInquiryCounts();
   const [menuOpen, setMenuOpen] = useState(false);
   const onSellClick = useSellAction();
@@ -245,7 +247,7 @@ export function Navbar() {
                     role="menuitem"
                     onClick={() => {
                       setMenuOpen(false);
-                      void logout();
+                      void handleLogout();
                     }}
                     className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                   >

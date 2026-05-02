@@ -84,17 +84,21 @@ export const upgradeToSellerThunk = createAsyncThunk<
 });
 
 /**
- * Hydrates `state.auth` from the backend if a refresh-token cookie is valid.
- * Called once at app startup (and after refresh) to know whether the user is logged in.
+ * Hydrates `state.auth` from the backend on every app boot (page reload
+ * included). We just call `/auth/me` directly — the access token in module
+ * memory is gone after a reload, so the request goes out with no bearer
+ * and the backend replies 401. The shared axios response interceptor then
+ * transparently rotates the refresh-token cookie via `/auth/refresh`,
+ * stashes the fresh access token in memory, and retries `/auth/me`.
+ *
+ * Doing it this way (one call) means a transient blip on the explicit
+ * `/auth/refresh` POST no longer drops a logged-in user to the login
+ * screen on refresh — the interceptor's retry already covers that case.
  */
 export const hydrateThunk = createAsyncThunk<AuthUser | null, void>(
   'auth/hydrate',
   async () => {
     try {
-      // Try to refresh first (uses the httpOnly cookie); if that succeeds we have an access token,
-      // and we can call /auth/me. If refresh fails the user is unauthenticated.
-      const tokens = await authApi.refresh();
-      setAccessToken(tokens.accessToken);
       return await authApi.me();
     } catch {
       setAccessToken(null);

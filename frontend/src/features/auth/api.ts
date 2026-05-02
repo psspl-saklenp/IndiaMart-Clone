@@ -37,11 +37,11 @@ export async function upgradeToSeller(
 }
 
 export async function refresh(): Promise<RefreshResponse> {
-  const { data } = await api.post<RefreshResponse>('/auth/refresh', null, {
-    // Skip the response interceptor's auto-refresh logic on this endpoint to
-    // avoid an infinite loop if the refresh itself returns 401.
-    headers: { 'X-Skip-Refresh': '1' },
-  });
+  // The response interceptor in `lib/axios.ts` already detects calls to
+  // `/auth/refresh` and skips its retry logic for them, so we don't need a
+  // custom header here — which is good, because adding one would force a
+  // CORS preflight that the server's `allowedHeaders` whitelist rejects.
+  const { data } = await api.post<RefreshResponse>('/auth/refresh');
   return data;
 }
 

@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { useInquiryCounts } from '@/features/inquiries/use-inquiry-counts';
 import { useAuth } from '@/hooks/use-auth';
+import { useLogout } from '@/hooks/use-logout';
 
 /**
  * Minimal top bar for the seller area.
@@ -16,7 +17,8 @@ import { useAuth } from '@/hooks/use-auth';
  * filters and sending inquiries lives entirely on the buyer side.
  */
 export function SellerTopBar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const handleLogout = useLogout();
   const { data: counts } = useInquiryCounts();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -104,7 +106,7 @@ export function SellerTopBar() {
                     role="menuitem"
                     onClick={() => {
                       setMenuOpen(false);
-                      void logout();
+                      void handleLogout();
                     }}
                     className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                   >

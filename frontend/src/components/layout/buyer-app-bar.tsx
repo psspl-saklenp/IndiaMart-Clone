@@ -6,6 +6,7 @@ import { Suspense, useState } from 'react';
 import { SearchBar } from '@/components/layout/search-bar';
 import { useSellAction } from '@/features/auth/use-sell-action';
 import { useAuth } from '@/hooks/use-auth';
+import { useLogout } from '@/hooks/use-logout';
 import { cn } from '@/lib/utils';
 
 /**
@@ -16,7 +17,8 @@ import { cn } from '@/lib/utils';
  * logos or trademarks are reproduced here.
  */
 export function BuyerAppBar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const handleLogout = useLogout();
   const [menuOpen, setMenuOpen] = useState(false);
   // Single shared decision tree for the Sell call-to-action: buyers get
   // the upgrade modal, sellers/admins go to /seller/dashboard, and any
@@ -103,7 +105,7 @@ export function BuyerAppBar() {
                   role="menuitem"
                   onClick={() => {
                     setMenuOpen(false);
-                    void logout();
+                    void handleLogout();
                   }}
                   className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                 >
