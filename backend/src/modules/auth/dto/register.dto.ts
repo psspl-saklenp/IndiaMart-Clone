@@ -52,11 +52,12 @@ export class RegisterDto {
   })
   role!: RegisterRole;
 
-  @ApiPropertyOptional({ example: '+91 98765 43210' })
-  @IsOptional()
+  @ApiProperty({ example: '+91 98765 43210' })
   @IsString()
+  @MinLength(7)
   @MaxLength(20)
-  phone?: string;
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  phone!: string;
 
   @ApiPropertyOptional({ example: 'Acme Industries Pvt Ltd' })
   @IsOptional()

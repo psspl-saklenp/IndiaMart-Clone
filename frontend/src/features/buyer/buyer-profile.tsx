@@ -19,8 +19,14 @@ import {
  *   ┌────────────────────────────┬─────────────────────────────────────┐
  *   │  Header card               │  Verified Buyer Progress card       │
  *   ├────────────────────────────┴─────────────────────────────────────┤
- *   │  Four tile cards in a responsive grid                             │
+ *   │  Four tile cards in a 2 x 2 grid                                  │
+ *   │    Primary Details   |   Address Details                         │
+ *   │    Business Details  |   Account Settings                        │
  *   └───────────────────────────────────────────────────────────────────┘
+ *
+ * Only one tile may be expanded at a time — `openTile` holds either a single
+ * tile key or `null`. The toggle uses a functional updater to avoid any
+ * stale-closure races when the user clicks tiles in quick succession.
  */
 export function BuyerProfile() {
   const { user } = useAuth();
@@ -90,14 +96,18 @@ export function BuyerProfile() {
         />
       </div>
 
-      {/* Tile grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Tile grid — 2 x 2 on >=sm, single column on mobile.
+          `items-start` keeps the closed card in the same row compact when
+          its sibling expands, so visually only the clicked card grows. */}
+      <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
         {tiles.map((tile) => (
           <TileCard
             key={tile.key}
             tile={tile}
             open={openTile === tile.key}
-            onToggle={() => setOpenTile(openTile === tile.key ? null : tile.key)}
+            onToggle={() =>
+              setOpenTile((current) => (current === tile.key ? null : tile.key))
+            }
           >
             {tile.key === 'primary' && (
               <PrimaryDetailsForm profile={profile} update={update} userPhone={user?.phone ?? ''} userEmail={user?.email ?? ''} />

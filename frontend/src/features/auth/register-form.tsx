@@ -62,13 +62,22 @@ export function RegisterForm() {
       setClientError('Passwords do not match');
       return;
     }
+    const trimmedPhone = phone.trim();
+    if (!trimmedPhone) {
+      setClientError('Phone number is required');
+      return;
+    }
+    if (trimmedPhone.length < 7) {
+      setClientError('Phone number is too short');
+      return;
+    }
 
     const payload: RegisterPayload = {
       email,
       password,
       name,
       role: 'buyer',
-      ...(phone ? { phone } : {}),
+      phone: trimmedPhone,
       ...(companyName ? { companyName } : {}),
     };
 
@@ -137,11 +146,13 @@ export function RegisterForm() {
 
         <Input
           name="phone"
-          label="Phone (optional)"
+          label="Phone"
           type="tel"
+          required
           autoComplete="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+          minLength={7}
           maxLength={20}
         />
 

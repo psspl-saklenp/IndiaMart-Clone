@@ -60,7 +60,6 @@ export function BuyerAppBar() {
           <UtilityButton onClick={handleSellClick} icon={<IconStorefront />} label="Sell" />
           <UtilityLink href="/me/inquiries" icon={<IconChat />} label="Messages" />
           <UtilityLink href="#" icon={<IconHelp />} label="Help" />
-          <UtilityLink href="#" icon={<IconGlobe />} label="Exporters" />
 
           {/* Profile dropdown */}
           <div className="relative">
@@ -214,16 +213,6 @@ function IconHelp() {
       <circle cx="12" cy="12" r="9" />
       <path d="M9.5 9.5a2.5 2.5 0 1 1 4 2c-.83.83-1.5 1.5-1.5 2.5" />
       <path d="M12 17h.01" />
-    </svg>
-  );
-}
-
-function IconGlobe() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18" />
-      <path d="M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
     </svg>
   );
 }

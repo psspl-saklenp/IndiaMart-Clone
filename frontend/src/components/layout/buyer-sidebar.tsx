@@ -24,24 +24,14 @@ export function BuyerSidebar() {
 
   const initial = (user?.name ?? 'U').charAt(0).toUpperCase();
   const displayName = user?.name ?? 'My account';
-  const completion = computeProfileCompletion(user);
 
   const items: SidebarItem[] = [
     { label: 'Dashboard', href: '/me/dashboard', icon: <IconHome /> },
-    {
-      label: 'My Profile',
-      href: '/me/profile',
-      icon: <IconIdCard />,
-      badge: { text: `${completion}%`, tone: 'amber' },
-    },
+    { label: 'My Profile', href: '/me/profile', icon: <IconIdCard /> },
     { label: 'Messages', href: '/me/inquiries', icon: <IconMail /> },
-    { label: 'TrustSEAL Buyer', href: '#', icon: <IconShieldCheck /> },
     { label: 'Know Your Seller', href: '#', icon: <IconSearchUser /> },
-    { label: 'Payment Protection', href: '#', icon: <IconShieldDollar /> },
-    { label: 'Loans', href: '#', icon: <IconWallet /> },
     { label: 'Ship With IM', href: '/me/ship', icon: <IconTruck /> },
     { label: 'FAQ', href: '/me/faq', icon: <IconQuestion /> },
-    { label: 'Credit Score', href: '#', icon: <IconChart /> },
   ];
 
   return (
@@ -137,32 +127,6 @@ export function BuyerSidebar() {
 }
 
 /* ------------------------------------------------------------------------ */
-/*                          Profile completion                              */
-/* ------------------------------------------------------------------------ */
-
-function computeProfileCompletion(
-  user:
-    | {
-        name: string;
-        email: string;
-        phone: string | null;
-        isVerified: boolean;
-      }
-    | null,
-): number {
-  if (!user) return 0;
-  // Simple heuristic over the fields we currently expose.
-  const checks = [
-    Boolean(user.name?.trim()),
-    Boolean(user.email?.trim()),
-    Boolean(user.phone?.trim()),
-    user.isVerified,
-  ];
-  const filled = checks.filter(Boolean).length;
-  return Math.round((filled / checks.length) * 100);
-}
-
-/* ------------------------------------------------------------------------ */
 /*                            Inline SVG icons                              */
 /* ------------------------------------------------------------------------ */
 
@@ -210,15 +174,6 @@ function IconMail() {
   );
 }
 
-function IconShieldCheck() {
-  return (
-    <svg {...svgProps()}>
-      <path d="M12 3l8 3v6c0 4.5-3.4 8.4-8 9-4.6-.6-8-4.5-8-9V6z" />
-      <path d="M9 12l2 2 4-4" />
-    </svg>
-  );
-}
-
 function IconSearchUser() {
   return (
     <svg {...svgProps()}>
@@ -230,26 +185,6 @@ function IconSearchUser() {
   );
 }
 
-function IconShieldDollar() {
-  return (
-    <svg {...svgProps()}>
-      <path d="M12 3l8 3v6c0 4.5-3.4 8.4-8 9-4.6-.6-8-4.5-8-9V6z" />
-      <path d="M14 9.5c-.5-.6-1.3-1-2.2-1-1.5 0-2.5.8-2.5 1.8 0 1.1 1 1.5 2.5 1.9 1.5.4 2.5.8 2.5 1.9s-1 1.8-2.5 1.8c-1 0-1.8-.4-2.3-1" />
-      <path d="M11.8 7v1.5M11.8 15.5V17" />
-    </svg>
-  );
-}
-
-function IconWallet() {
-  return (
-    <svg {...svgProps()}>
-      <rect x="3" y="6" width="18" height="13" rx="2" />
-      <path d="M3 10h18" />
-      <circle cx="17" cy="14.5" r="1.2" />
-    </svg>
-  );
-}
-
 function IconTruck() {
   return (
     <svg {...svgProps()}>
@@ -257,18 +192,6 @@ function IconTruck() {
       <path d="M13 10h4l3 3v3h-7z" />
       <circle cx="7" cy="18" r="1.6" />
       <circle cx="17" cy="18" r="1.6" />
-    </svg>
-  );
-}
-
-function IconChart() {
-  return (
-    <svg {...svgProps()}>
-      <path d="M4 19h16" />
-      <path d="M7 16V9" />
-      <path d="M11 16V5" />
-      <path d="M15 16v-8" />
-      <path d="M19 16v-4" />
     </svg>
   );
 }

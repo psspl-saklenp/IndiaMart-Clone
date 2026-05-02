@@ -30,7 +30,11 @@ export interface RegisterPayload {
   password: string;
   name: string;
   role: RegisterRole;
-  phone?: string;
+  /**
+   * Phone is now mandatory at signup so we always have a verified contact
+   * channel for buyers (matches the backend `RegisterDto`).
+   */
+  phone: string;
   companyName?: string;
   gstNumber?: string;
 }
