@@ -19,7 +19,7 @@ import {
  *   ┌────────────────────────────┬─────────────────────────────────────┐
  *   │  Header card               │  Verified Buyer Progress card       │
  *   ├────────────────────────────┴─────────────────────────────────────┤
- *   │  Six tile cards in a 3-column grid                                │
+ *   │  Four tile cards in a responsive grid                             │
  *   └───────────────────────────────────────────────────────────────────┘
  */
 export function BuyerProfile() {
@@ -59,18 +59,6 @@ export function BuyerProfile() {
       icon: <IconSettings />,
       description: 'Manage Account',
     },
-    {
-      key: 'help',
-      title: 'Help',
-      icon: <IconHelp />,
-      description: 'Get support & assistance',
-    },
-    {
-      key: 'ticket',
-      title: 'Raise a ticket',
-      icon: <IconTicket />,
-      description: 'Initiate a support request',
-    },
   ];
 
   return (
@@ -103,7 +91,7 @@ export function BuyerProfile() {
       </div>
 
       {/* Tile grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {tiles.map((tile) => (
           <TileCard
             key={tile.key}
@@ -121,8 +109,6 @@ export function BuyerProfile() {
               <BusinessDetailsForm profile={profile} update={update} />
             )}
             {tile.key === 'account' && <AccountSettingsPanel />}
-            {tile.key === 'help' && <HelpPanel />}
-            {tile.key === 'ticket' && <RaiseTicketForm />}
           </TileCard>
         ))}
       </div>
@@ -289,7 +275,7 @@ function VerifiedBuyerProgressCard({
         </span>
       </header>
 
-      <ol className="mt-5 grid grid-cols-5 gap-1">
+      <ol className="mt-5 grid grid-cols-3 gap-1">
         {milestones.map((m, i) => {
           const isLast = i === milestones.length - 1;
           return (
@@ -347,13 +333,7 @@ function VerifiedBuyerProgressCard({
 /*                              Tile cards                                  */
 /* ------------------------------------------------------------------------ */
 
-type TileKey =
-  | 'primary'
-  | 'address'
-  | 'business'
-  | 'account'
-  | 'help'
-  | 'ticket';
+type TileKey = 'primary' | 'address' | 'business' | 'account';
 
 interface TileMeta {
   key: TileKey;
@@ -594,71 +574,6 @@ function AccountSettingsPanel() {
   );
 }
 
-function HelpPanel() {
-  return (
-    <div className="space-y-2 text-xs text-ink-600">
-      <p>Need a hand? Try one of these:</p>
-      <ul className="ml-4 list-disc space-y-1 text-ink-500">
-        <li>
-          <a href="#" className="font-medium text-[var(--color-im-teal-700)] hover:underline">
-            Browse the help centre
-          </a>
-        </li>
-        <li>Email support &mdash; help@indiamart-clone.local</li>
-        <li>Call our team &mdash; Mon&ndash;Sat, 9 a.m. to 7 p.m. IST</li>
-      </ul>
-    </div>
-  );
-}
-
-function RaiseTicketForm() {
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [submittedAt, setSubmittedAt] = useState<number | null>(null);
-
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!subject.trim() || !message.trim()) return;
-    // No backend yet; we simulate a successful submit so the UI is honest about state.
-    setSubmittedAt(Date.now());
-    setSubject('');
-    setMessage('');
-  }
-
-  return (
-    <form onSubmit={onSubmit} className="space-y-3 text-xs">
-      <Input
-        label="Subject"
-        value={subject}
-        onChange={(e) => setSubject(e.target.value)}
-        placeholder="Brief description of the issue"
-        required
-      />
-      <label className="block space-y-1.5">
-        <span className="block text-xs font-medium text-ink-700">Details</span>
-        <textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          rows={4}
-          placeholder="Tell us what happened so we can help."
-          required
-          className="block w-full rounded-md border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
-        />
-      </label>
-      <div className="flex items-center justify-between">
-        <Button type="submit" size="sm">
-          Submit ticket
-        </Button>
-        {submittedAt && (
-          <span className="text-[11px] text-emerald-600">
-            Ticket received. We&rsquo;ll get back to you soon.
-          </span>
-        )}
-      </div>
-    </form>
-  );
-}
-
 /* ------------------------------------------------------------------------ */
 /*                                Helpers                                   */
 /* ------------------------------------------------------------------------ */
@@ -670,48 +585,91 @@ interface Milestone {
   tileKey: TileKey;
 }
 
+/**
+ * Per-section field checks. Each array contains a boolean per field that the
+ * user can fill in that section, so we can use the same source of truth for
+ * the milestone timeline ("all fields filled => step done") and the profile
+ * strength meter (sum of filled fields across all sections).
+ */
+function primarySectionFields(
+  user: { phone: string | null } | null,
+  ext: BuyerProfileExtension,
+): boolean[] {
+  return [
+    Boolean(user?.phone?.trim()),
+    Boolean(ext.alternativeMobile.trim()),
+    Boolean(ext.secondaryEmail.trim()),
+  ];
+}
+
+function addressSectionFields(ext: BuyerProfileExtension): boolean[] {
+  return [
+    Boolean(ext.houseNo.trim()),
+    Boolean(ext.street.trim()),
+    Boolean(ext.area.trim()),
+    Boolean(ext.city.trim()),
+    Boolean(ext.state.trim()),
+    Boolean(ext.pincode.trim()),
+  ];
+}
+
+function businessSectionFields(ext: BuyerProfileExtension): boolean[] {
+  return [
+    Boolean(ext.companyName.trim()),
+    Boolean(ext.companyWebsite.trim()),
+    Boolean(ext.gstNumber.trim()),
+    Boolean(ext.businessType.trim()),
+  ];
+}
+
 function computeMilestones(
   user: { name: string; email: string; phone: string | null } | null,
   ext: BuyerProfileExtension,
 ): Milestone[] {
   return [
-    { label: 'Name', done: Boolean(user?.name?.trim()), tileKey: 'primary' },
     {
-      label: 'Company',
-      done: Boolean(ext.companyName.trim()),
-      tileKey: 'business',
+      label: 'Primary',
+      done: primarySectionFields(user, ext).every(Boolean),
+      tileKey: 'primary',
     },
-    { label: 'Email', done: Boolean(user?.email?.trim()), tileKey: 'primary' },
-    { label: 'Phone', done: Boolean(user?.phone?.trim()), tileKey: 'primary' },
     {
-      label: 'GST',
-      done: Boolean(ext.gstNumber.trim()),
+      label: 'Address',
+      done: addressSectionFields(ext).every(Boolean),
+      tileKey: 'address',
+    },
+    {
+      label: 'Business',
+      done: businessSectionFields(ext).every(Boolean),
       tileKey: 'business',
     },
   ];
 }
 
+/**
+ * Profile strength weights each of the three sections equally and gives
+ * partial credit per filled field within a section. So:
+ *   - All Primary fields filled  =>  ~33%
+ *   - Primary + Address filled   =>  ~67%
+ *   - All sections filled        =>   100%
+ * Filling individual fields between those checkpoints inches the meter
+ * forward, so users see immediate feedback while typing.
+ */
 function computeProfileStrength(
   user: { name: string; email: string; phone: string | null; isVerified: boolean } | null,
   ext: BuyerProfileExtension,
 ): number {
   if (!user) return 0;
-  const checks = [
-    Boolean(user.name?.trim()),
-    Boolean(user.email?.trim()),
-    Boolean(user.phone?.trim()),
-    user.isVerified,
-    Boolean(ext.city.trim()),
-    Boolean(ext.state.trim()),
-    Boolean(ext.alternativeMobile.trim()),
-    Boolean(ext.companyName.trim()),
-    Boolean(ext.gstNumber.trim()),
-    Boolean(ext.companyWebsite.trim()),
-    Boolean(ext.houseNo.trim() || ext.street.trim()),
-    Boolean(ext.pincode.trim()),
+  const sections = [
+    primarySectionFields(user, ext),
+    addressSectionFields(ext),
+    businessSectionFields(ext),
   ];
-  const filled = checks.filter(Boolean).length;
-  return Math.round((filled / checks.length) * 100);
+  const sectionFractions = sections.map(
+    (fields) => fields.filter(Boolean).length / fields.length,
+  );
+  const overall =
+    sectionFractions.reduce((sum, f) => sum + f, 0) / sections.length;
+  return Math.round(overall * 100);
 }
 
 function isLikelyGst(value: string): boolean {
@@ -891,21 +849,3 @@ function IconSettings() {
   );
 }
 
-function IconHelp() {
-  return (
-    <svg {...svg()}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M9.5 9.5a2.5 2.5 0 1 1 4 2c-.83.83-1.5 1.5-1.5 2.5" />
-      <path d="M12 17h.01" />
-    </svg>
-  );
-}
-
-function IconTicket() {
-  return (
-    <svg {...svg()}>
-      <path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
-      <path d="M13 7v10" strokeDasharray="2 2" />
-    </svg>
-  );
-}

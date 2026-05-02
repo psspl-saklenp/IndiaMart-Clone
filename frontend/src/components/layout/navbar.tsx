@@ -224,8 +224,12 @@ export function Navbar() {
                       >
                         Buy leads
                       </Link>
+                      {/* Sellers also have business details captured at
+                          signup; "My profile" routes them to the unified
+                          buyer profile page so they edit those in the same
+                          UI as buyers. */}
                       <Link
-                        href="/seller/profile"
+                        href="/me/profile"
                         role="menuitem"
                         onClick={() => setMenuOpen(false)}
                         className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"

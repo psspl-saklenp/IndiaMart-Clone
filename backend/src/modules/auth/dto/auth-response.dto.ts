@@ -10,6 +10,13 @@ export class PublicUserDto {
   @ApiProperty({ required: false, nullable: true }) phone!: string | null;
   @ApiProperty() isVerified!: boolean;
   @ApiProperty({ required: false, nullable: true }) lastLoginAt!: Date | null;
+  /**
+   * Business details captured at signup (or during the seller upgrade
+   * flow). Surfacing them on the auth payload lets the buyer profile page
+   * prefill the Business Details tile without a separate request.
+   */
+  @ApiProperty({ required: false, nullable: true }) companyName!: string | null;
+  @ApiProperty({ required: false, nullable: true }) gstNumber!: string | null;
 }
 
 export class LoginResponseDto {

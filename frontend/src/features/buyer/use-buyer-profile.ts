@@ -2,12 +2,20 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { useAppSelector } from '@/store';
+
 /**
  * Buyer-profile extension fields.
  *
- * The backend currently only persists the core auth fields (name, email,
- * phone, isVerified) on the user. Until a dedicated buyer-profile API is
- * added we store the rest in localStorage so the UI still feels real.
+ * The backend persists the core auth fields plus a couple of business
+ * details captured at signup (`companyName`, `gstNumber`) on the user.
+ * Everything else is kept in localStorage until a dedicated buyer-profile
+ * API exists, so the UI still feels real.
+ *
+ * On hydration we merge the auth-user values into the localStorage copy so
+ * details captured during registration (or any other signup-time flow)
+ * show up prefilled on the profile page. Locally-saved values win — once
+ * the user types and saves, that becomes the source of truth.
  *
  * Swap the storage layer for HTTP calls when the API is available; the rest
  * of the dashboard / profile UI consumes this hook unchanged.
@@ -74,10 +82,28 @@ export function useBuyerProfile() {
   const [profile, setProfile] = useState<BuyerProfileExtension>(EMPTY);
   const [hydrated, setHydrated] = useState(false);
 
+  // Pull the registered business details from the auth user so the form
+  // prefills any data captured during signup or the seller upgrade flow
+  // before the user has saved anything locally.
+  const authCompanyName = useAppSelector((s) => s.auth.user?.companyName ?? null);
+  const authGstNumber = useAppSelector((s) => s.auth.user?.gstNumber ?? null);
+
   useEffect(() => {
-    setProfile(readStorage());
+    const stored = readStorage();
+    setProfile({
+      ...stored,
+      // Prefer locally-saved values when present; otherwise fall back to
+      // the values captured at registration so the Business Details tile
+      // doesn't look empty on first visit.
+      companyName: stored.companyName.trim()
+        ? stored.companyName
+        : (authCompanyName ?? ''),
+      gstNumber: stored.gstNumber.trim()
+        ? stored.gstNumber
+        : (authGstNumber ?? ''),
+    });
     setHydrated(true);
-  }, []);
+  }, [authCompanyName, authGstNumber]);
 
   const update = useCallback((patch: Partial<BuyerProfileExtension>) => {
     setProfile((prev) => {

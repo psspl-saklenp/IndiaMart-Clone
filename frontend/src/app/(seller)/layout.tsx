@@ -29,7 +29,9 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
             <Link href="/seller/leads" className="text-ink-700 hover:text-brand-700">
               Buy leads
             </Link>
-            <Link href="/seller/profile" className="text-ink-700 hover:text-brand-700">
+            {/* Profile lives on the shared buyer page so the seller and
+                buyer share one Business Details surface. */}
+            <Link href="/me/profile" className="text-ink-700 hover:text-brand-700">
               Profile
             </Link>
           </nav>

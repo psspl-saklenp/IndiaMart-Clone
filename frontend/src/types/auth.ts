@@ -9,6 +9,13 @@ export interface AuthUser {
   phone: string | null;
   isVerified: boolean;
   lastLoginAt: string | null;
+  /**
+   * Business details captured during signup or the seller upgrade flow.
+   * The buyer profile page uses these to prefill the Business Details
+   * tile when the user hasn't saved local edits yet.
+   */
+  companyName: string | null;
+  gstNumber: string | null;
 }
 
 export interface LoginPayload {

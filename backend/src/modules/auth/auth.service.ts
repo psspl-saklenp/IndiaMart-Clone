@@ -237,6 +237,20 @@ export class AuthService {
   }
 
   toPublicUser(user: User): PublicUserDto {
+    // Buyers store business details on `buyerProfile`; sellers (including
+    // buyers who later upgraded) carry them on `sellerProfile`. Prefer the
+    // buyer record so we keep returning the original signup values even
+    // after an upgrade, falling back to the seller record when only that
+    // exists (e.g. accounts that registered straight as sellers).
+    const companyName =
+      user.buyerProfile?.companyName ??
+      user.sellerProfile?.companyName ??
+      null;
+    const gstNumber =
+      user.buyerProfile?.gstNumber ??
+      user.sellerProfile?.gstNumber ??
+      null;
+
     return {
       id: user.id,
       email: user.email,
@@ -245,6 +259,8 @@ export class AuthService {
       phone: user.phone,
       isVerified: user.isVerified,
       lastLoginAt: user.lastLoginAt,
+      companyName,
+      gstNumber,
     };
   }
 

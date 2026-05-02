@@ -90,7 +90,12 @@ export function SellerTopBar() {
                   <DropdownItem href="/seller/products/new" onClose={() => setMenuOpen(false)}>
                     + New product
                   </DropdownItem>
-                  <DropdownItem href="/seller/profile" onClose={() => setMenuOpen(false)}>
+                  {/* Sellers also have business details — companyName, GST,
+                      etc. — captured at signup. Sending "My profile" to the
+                      unified buyer profile page lets them edit those details
+                      in the same UI as buyers (the page reads them from the
+                      auth payload regardless of role). */}
+                  <DropdownItem href="/me/profile" onClose={() => setMenuOpen(false)}>
                     My profile
                   </DropdownItem>
                   <div className="border-t border-ink-100" />
