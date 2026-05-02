@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { useInquiryCounts } from '@/features/inquiries/use-inquiry-counts';
 import { useAuth } from '@/hooks/use-auth';
 import { useLogout } from '@/hooks/use-logout';
 
@@ -19,10 +18,8 @@ import { useLogout } from '@/hooks/use-logout';
 export function SellerTopBar() {
   const { user } = useAuth();
   const handleLogout = useLogout();
-  const { data: counts } = useInquiryCounts();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const sellerCount = counts?.asSeller ?? 0;
   const firstName = user?.name?.split(' ')[0] ?? 'there';
 
   return (
@@ -45,14 +42,6 @@ export function SellerTopBar() {
           >
             <IconChat />
             <span>Inquiries</span>
-            {sellerCount > 0 && (
-              <span
-                aria-label={`${sellerCount} new inquiries`}
-                className="ml-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-brand-600 px-1.5 text-[10px] font-semibold text-white"
-              >
-                {sellerCount > 9 ? '9+' : sellerCount}
-              </span>
-            )}
           </Link>
 
           {user ? (

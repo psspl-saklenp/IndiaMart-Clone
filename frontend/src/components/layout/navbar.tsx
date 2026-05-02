@@ -152,14 +152,6 @@ export function Navbar() {
                         )}
                       </Link>
                       <Link
-                        href="/me/saved"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
-                      >
-                        Saved products
-                      </Link>
-                      <Link
                         href="/me/requirements"
                         role="menuitem"
                         onClick={() => setMenuOpen(false)}

@@ -38,7 +38,18 @@ export interface BuyerProfileExtension {
   businessType: string;
 }
 
-const STORAGE_KEY = 'indiamart-clone:buyer-profile';
+/**
+ * Storage key prefix. The actual key is suffixed with the authenticated
+ * user's id so each account on a shared browser keeps its own profile
+ * data — without this, logging out and signing in as a different user
+ * would surface the previous account's locally-saved profile details.
+ */
+const STORAGE_KEY_PREFIX = 'indiamart-clone:buyer-profile';
+
+function storageKeyFor(userId: string | null | undefined): string | null {
+  if (!userId) return null;
+  return `${STORAGE_KEY_PREFIX}:${userId}`;
+}
 
 const EMPTY: BuyerProfileExtension = {
   city: '',
@@ -55,10 +66,10 @@ const EMPTY: BuyerProfileExtension = {
   businessType: '',
 };
 
-function readStorage(): BuyerProfileExtension {
-  if (typeof window === 'undefined') return EMPTY;
+function readStorage(key: string | null): BuyerProfileExtension {
+  if (typeof window === 'undefined' || !key) return EMPTY;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return EMPTY;
     const parsed = JSON.parse(raw) as Partial<BuyerProfileExtension>;
     return { ...EMPTY, ...parsed };
@@ -67,10 +78,10 @@ function readStorage(): BuyerProfileExtension {
   }
 }
 
-function writeStorage(value: BuyerProfileExtension): void {
-  if (typeof window === 'undefined') return;
+function writeStorage(key: string | null, value: BuyerProfileExtension): void {
+  if (typeof window === 'undefined' || !key) return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+    window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
     // Storage may be disabled (private mode); silently degrade.
   }
@@ -84,12 +95,26 @@ export function useBuyerProfile() {
 
   // Pull the registered business details from the auth user so the form
   // prefills any data captured during signup or the seller upgrade flow
-  // before the user has saved anything locally.
+  // before the user has saved anything locally. Also pull the user id so
+  // we can scope the localStorage key per account.
+  const userId = useAppSelector((s) => s.auth.user?.id ?? null);
   const authCompanyName = useAppSelector((s) => s.auth.user?.companyName ?? null);
   const authGstNumber = useAppSelector((s) => s.auth.user?.gstNumber ?? null);
 
+  const storageKey = storageKeyFor(userId);
+
   useEffect(() => {
-    const stored = readStorage();
+    // No authenticated user — show an empty profile and skip any storage
+    // reads. This also covers the brief window during logout before the
+    // page redirects to the login screen, so we never leak the previous
+    // user's cached data.
+    if (!storageKey) {
+      setProfile(EMPTY);
+      setHydrated(true);
+      return;
+    }
+
+    const stored = readStorage(storageKey);
     setProfile({
       ...stored,
       // Prefer locally-saved values when present; otherwise fall back to
@@ -103,20 +128,23 @@ export function useBuyerProfile() {
         : (authGstNumber ?? ''),
     });
     setHydrated(true);
-  }, [authCompanyName, authGstNumber]);
+  }, [storageKey, authCompanyName, authGstNumber]);
 
-  const update = useCallback((patch: Partial<BuyerProfileExtension>) => {
-    setProfile((prev) => {
-      const next = { ...prev, ...patch };
-      writeStorage(next);
-      return next;
-    });
-  }, []);
+  const update = useCallback(
+    (patch: Partial<BuyerProfileExtension>) => {
+      setProfile((prev) => {
+        const next = { ...prev, ...patch };
+        writeStorage(storageKey, next);
+        return next;
+      });
+    },
+    [storageKey],
+  );
 
   const clear = useCallback(() => {
-    writeStorage(EMPTY);
+    writeStorage(storageKey, EMPTY);
     setProfile(EMPTY);
-  }, []);
+  }, [storageKey]);
 
   return { profile, update, clear, hydrated };
 }

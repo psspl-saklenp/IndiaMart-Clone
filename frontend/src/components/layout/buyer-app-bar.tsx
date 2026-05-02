@@ -93,9 +93,6 @@ export function BuyerAppBar() {
                 <DropdownItem href="/me/inquiries" onClose={() => setMenuOpen(false)}>
                   My inquiries
                 </DropdownItem>
-                <DropdownItem href="/me/saved" onClose={() => setMenuOpen(false)}>
-                  Saved products
-                </DropdownItem>
                 <DropdownItem href="/me/requirements" onClose={() => setMenuOpen(false)}>
                   My requirements
                 </DropdownItem>
