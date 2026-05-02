@@ -29,7 +29,7 @@ export function BuyerSidebar() {
     { label: 'Dashboard', href: '/me/dashboard', icon: <IconHome /> },
     { label: 'My Profile', href: '/me/profile', icon: <IconIdCard /> },
     { label: 'Messages', href: '/me/inquiries', icon: <IconMail /> },
-    { label: 'Know Your Seller', href: '#', icon: <IconSearchUser /> },
+    { label: 'Know Your Seller', href: '/me/know-your-seller', icon: <IconSearchUser /> },
     { label: 'Ship With IM', href: '/me/ship', icon: <IconTruck /> },
     { label: 'FAQ', href: '/me/faq', icon: <IconQuestion /> },
   ];
@@ -57,13 +57,6 @@ export function BuyerSidebar() {
             </p>
           </div>
         </div>
-        <Link
-          href="#"
-          className="mt-3 flex items-center gap-2 text-xs font-medium text-amber-700 hover:underline"
-        >
-          <span aria-hidden className="text-amber-600">★</span>
-          Become TrustSEAL Buyer
-        </Link>
       </div>
 
       {/* Nav */}

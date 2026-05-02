@@ -9,6 +9,7 @@ import {
   Length,
   Max,
   Min,
+  MinLength,
 } from 'class-validator';
 
 import { PaginationQueryDto } from '../../../common/utils/pagination';
@@ -128,4 +129,26 @@ export class UpdateMyProfileDto {
   @IsOptional()
   @IsUrl({ require_protocol: true, require_tld: false })
   bannerUrl?: string;
+}
+
+/**
+ * "Know Your Seller" lookup query — a buyer types either part of the
+ * seller's name or email address (min 2 chars to keep the result set
+ * sensible) and we fan out a case-insensitive match against both fields.
+ */
+export class LookupSellerQueryDto {
+  @ApiProperty({ description: 'Partial name or email of the seller' })
+  @IsString()
+  @MinLength(2)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  q!: string;
+}
+
+export class KnownSellerDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() email!: string;
+  @ApiProperty({ required: false, nullable: true }) phone!: string | null;
+  @ApiProperty() companyName!: string;
+  @ApiProperty({ required: false, nullable: true }) gstNumber!: string | null;
 }

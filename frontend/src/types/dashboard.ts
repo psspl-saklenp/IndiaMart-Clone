@@ -48,3 +48,17 @@ export interface UpdateMyProfilePayload {
   logoUrl?: string;
   bannerUrl?: string;
 }
+
+/**
+ * Result row returned by the buyer-facing "Know Your Seller" lookup.
+ * Surfaces the seller's contact + business details so a buyer can verify
+ * the supplier before reaching out.
+ */
+export interface KnownSellerLookup {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  companyName: string;
+  gstNumber: string | null;
+}

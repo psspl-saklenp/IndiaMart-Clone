@@ -16,7 +16,9 @@ import type { PaginatedResult } from '../../common/utils/pagination';
 import { UserRole } from '../users/enums/user-role.enum';
 import { SellersService } from './sellers.service';
 import {
+  KnownSellerDto,
   ListSellersQueryDto,
+  LookupSellerQueryDto,
   MyProfileDto,
   SellerProfileDto,
   SellerSummaryDto,
@@ -42,6 +44,17 @@ export class SellersController {
   @ApiOkResponse({ type: MyProfileDto })
   me(@CurrentUser() user: AuthenticatedUser): Promise<MyProfileDto> {
     return this.sellersService.findMine(user.id);
+  }
+
+  @ApiBearerAuth()
+  @Get('lookup')
+  @ApiOperation({
+    summary:
+      'Buyer-facing "Know Your Seller" lookup by partial name/email match',
+  })
+  @ApiOkResponse({ type: [KnownSellerDto] })
+  lookup(@Query() query: LookupSellerQueryDto): Promise<KnownSellerDto[]> {
+    return this.sellersService.lookup(query.q);
   }
 
   @Roles(UserRole.SELLER, UserRole.ADMIN)

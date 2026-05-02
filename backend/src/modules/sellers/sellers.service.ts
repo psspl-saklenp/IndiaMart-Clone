@@ -5,8 +5,10 @@ import { Op, type WhereOptions } from 'sequelize';
 import { buildMeta, type PaginatedResult } from '../../common/utils/pagination';
 import { SellerProfile } from '../users/seller-profile.model';
 import { User } from '../users/user.model';
+import { UserRole } from '../users/enums/user-role.enum';
 import { ProductsService } from '../products/products.service';
 import {
+  type KnownSellerDto,
   type ListSellersQueryDto,
   type MyProfileDto,
   type SellerProfileDto,
@@ -86,6 +88,43 @@ export class SellersService {
       );
     }
     return this.toMyProfile(sp);
+  }
+
+  /**
+   * Buyer-facing "Know Your Seller" lookup. Matches a free-text term
+   * against the seller user's name or email address (case-insensitive) and
+   * returns the contact + business details a buyer needs to verify the
+   * supplier before reaching out. Capped at 10 rows so the UI never has to
+   * paginate this surface.
+   */
+  async lookup(q: string): Promise<KnownSellerDto[]> {
+    const term = `%${q.trim()}%`;
+    const sellers = await this.sellerProfileModel.findAll({
+      include: [
+        {
+          model: User,
+          required: true,
+          where: {
+            role: UserRole.SELLER,
+            [Op.or]: [
+              { name: { [Op.iLike]: term } },
+              { email: { [Op.iLike]: term } },
+            ],
+          } as WhereOptions<User>,
+        },
+      ],
+      order: [['companyName', 'ASC']],
+      limit: 10,
+    });
+
+    return sellers.map((sp) => ({
+      id: sp.userId,
+      name: sp.user?.name ?? sp.companyName,
+      email: sp.user?.email ?? '',
+      phone: sp.user?.phone ?? null,
+      companyName: sp.companyName,
+      gstNumber: sp.gstNumber,
+    }));
   }
 
   async updateMine(userId: string, dto: UpdateMyProfileDto): Promise<MyProfileDto> {
