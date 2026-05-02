@@ -45,9 +45,6 @@ export function ProductForm({ mode, product }: Props) {
   const [minOrderQty, setMinOrderQty] = useState(String(product?.minOrderQty ?? 1));
   const [stockStatus, setStockStatus] = useState<StockStatus>(product?.stockStatus ?? 'in_stock');
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
-  const [specsJson, setSpecsJson] = useState(
-    product?.specifications ? JSON.stringify(product.specifications, null, 2) : '',
-  );
   const [error, setError] = useState<string | null>(null);
 
   const createMut = useMutation({
@@ -68,22 +65,6 @@ export function ProductForm({ mode, product }: Props) {
     e.preventDefault();
     setError(null);
 
-    let specifications: Record<string, string> | undefined;
-    if (specsJson.trim()) {
-      try {
-        const parsed = JSON.parse(specsJson);
-        if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
-          throw new Error('Specifications must be a JSON object');
-        }
-        specifications = Object.fromEntries(
-          Object.entries(parsed as Record<string, unknown>).map(([k, v]) => [k, String(v)]),
-        );
-      } catch (err) {
-        setError(`Invalid specifications JSON: ${err instanceof Error ? err.message : err}`);
-        return;
-      }
-    }
-
     const payload: CreateProductPayload = {
       name: name.trim(),
       description: description.trim(),
@@ -93,7 +74,6 @@ export function ProductForm({ mode, product }: Props) {
       minOrderQty: Number(minOrderQty),
       stockStatus,
       isActive,
-      ...(specifications ? { specifications } : {}),
     };
 
     try {
@@ -183,16 +163,6 @@ export function ProductForm({ mode, product }: Props) {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={6}
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <Textarea
-            name="specifications"
-            label="Specifications (JSON object, optional)"
-            value={specsJson}
-            onChange={(e) => setSpecsJson(e.target.value)}
-            rows={5}
-            hint='Example: {"Material":"Steel","Bore":"17mm"}'
           />
         </div>
       </section>

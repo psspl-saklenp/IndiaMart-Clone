@@ -18,7 +18,8 @@ import { SellerSignupProductDto } from './register-seller.dto';
  * account fields (email/password/name/phone/companyName) because the user
  * is already authenticated. The four business/verification fields below
  * mirror the fields collected by step 1 of the seller upgrade modal, and
- * the catalog (>= 3 products) seeds the new supplier's draft product list.
+ * the catalog (>= 1 fully-detailed product) seeds the new supplier's
+ * product list.
  */
 export class UpgradeToSellerDto {
   // ---- Step 1: business & verification details -----------------------------
@@ -46,13 +47,14 @@ export class UpgradeToSellerDto {
   @Length(0, 32)
   gstNumber?: string;
 
-  // ---- Step 2: catalog (>= 3 product names) --------------------------------
+  // ---- Step 2: catalog (>= 1 product) --------------------------------------
   @ApiProperty({
     type: () => [SellerSignupProductDto],
-    description: 'At least 3 products are required to seed the new supplier catalog.',
+    description:
+      'At least 1 fully-detailed product is required to seed the new supplier catalog.',
   })
   @IsArray()
-  @ArrayMinSize(3)
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => SellerSignupProductDto)
   products!: SellerSignupProductDto[];

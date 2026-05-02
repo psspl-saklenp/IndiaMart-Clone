@@ -1,4 +1,5 @@
 import type { Role } from './api';
+import type { StockStatus } from './catalog';
 
 export interface AuthUser {
   id: string;
@@ -29,8 +30,15 @@ export interface RegisterPayload {
 
 export interface SellerSignupProduct {
   name: string;
+  description: string;
+  price: number;
   categoryId?: string;
-  price?: number;
+  specifications?: Record<string, string>;
+  currency?: string;
+  minOrderQty?: number;
+  unit?: string;
+  stockStatus?: StockStatus;
+  isActive?: boolean;
 }
 
 export interface RegisterSellerPayload {

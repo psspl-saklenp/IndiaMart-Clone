@@ -3,8 +3,13 @@ import { Transform, Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsEmail,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -16,12 +21,14 @@ import {
   ValidateNested,
 } from 'class-validator';
 
+import { STOCK_STATUSES, type StockStatusValue } from '../../products/dto/product.dto';
+
 /**
- * One product line entered in step 3 of the seller signup wizard.
+ * One product line entered in the catalog step of the seller signup wizard.
  *
- * The shape intentionally mirrors a slim subset of CreateProductDto so the
- * seller can later flesh these out (description, images, stock) from the
- * seller dashboard.
+ * Mirrors the full CreateProductDto so first-time sellers can seed a
+ * complete, ready-to-publish product (description, price, MOQ, unit,
+ * stock status, etc.) instead of just a name placeholder.
  */
 export class SellerSignupProductDto {
   @ApiProperty({ example: 'Industrial Ball Bearing 6203' })
@@ -38,18 +45,60 @@ export class SellerSignupProductDto {
   @IsUUID()
   categoryId?: string;
 
-  @ApiPropertyOptional({ description: 'Indicative unit price (defaults to 0)', example: 250 })
+  @ApiProperty({ description: 'Long-form product description' })
+  @IsString()
+  @IsNotEmpty()
+  @Length(3, 5000)
+  description!: string;
+
+  @ApiPropertyOptional({
+    description: 'Free-form key/value specs',
+    example: { Material: 'Steel', Bore: '17mm' },
+  })
   @IsOptional()
+  @IsObject()
+  specifications?: Record<string, string>;
+
+  @ApiProperty({ example: 250, description: 'Unit price' })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  price?: number;
+  price!: number;
+
+  @ApiPropertyOptional({ default: 'INR' })
+  @IsOptional()
+  @IsString()
+  @Length(3, 8)
+  currency?: string;
+
+  @ApiPropertyOptional({ default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  minOrderQty?: number;
+
+  @ApiPropertyOptional({ default: 'piece' })
+  @IsOptional()
+  @IsString()
+  @Length(1, 32)
+  unit?: string;
+
+  @ApiPropertyOptional({ enum: STOCK_STATUSES, default: 'in_stock' })
+  @IsOptional()
+  @IsEnum(STOCK_STATUSES)
+  stockStatus?: StockStatusValue;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
 
 /**
  * Captures all three steps of the seller registration modal in a single
  * payload. Every business/verification field is optional so the user can
- * defer details, but the catalog must include at least 3 products.
+ * defer details, but the catalog must include at least 1 product.
  */
 export class RegisterSellerDto {
   // ---- Step 1: account basics ----------------------------------------------
@@ -114,13 +163,14 @@ export class RegisterSellerDto {
   @Length(0, 16)
   panNumber?: string;
 
-  // ---- Step 3: catalog (>= 3 product names) --------------------------------
+  // ---- Step 3: catalog (>= 1 product) --------------------------------------
   @ApiProperty({
     type: () => [SellerSignupProductDto],
-    description: 'At least 3 products are required to seed the new supplier catalog.',
+    description:
+      'At least 1 fully-detailed product is required to seed the new supplier catalog.',
   })
   @IsArray()
-  @ArrayMinSize(3)
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => SellerSignupProductDto)
   products!: SellerSignupProductDto[];

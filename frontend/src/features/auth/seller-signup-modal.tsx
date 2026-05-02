@@ -7,17 +7,32 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { listCategoryTree } from '@/features/categories/api';
 import { useAuth } from '@/hooks/use-auth';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { clearError, upgradeToSellerThunk } from '@/store/slices/auth.slice';
 import { closeSellerSignup } from '@/store/slices/ui.slice';
-import type { Category } from '@/types/catalog';
+import type { Category, StockStatus } from '@/types/catalog';
 import type { SellerSignupProduct, UpgradeToSellerPayload } from '@/types/auth';
 
 const STEP_LABELS = ['Business & verification', 'Catalog'] as const;
 
-const MIN_PRODUCTS = 3;
+const STOCK_OPTIONS: { value: StockStatus; label: string }[] = [
+  { value: 'in_stock', label: 'In stock' },
+  { value: 'out_of_stock', label: 'Out of stock' },
+  { value: 'made_to_order', label: 'Made to order' },
+];
+
+interface ProductDraft {
+  name: string;
+  description: string;
+  categoryId: string;
+  price: string;
+  unit: string;
+  minOrderQty: string;
+  stockStatus: StockStatus;
+}
 
 interface FormState {
   // Step 1 — business & verification
@@ -25,18 +40,26 @@ interface FormState {
   pincode: string;
   panNumber: string;
   gstNumber: string;
-  // Step 2 — catalog
-  categoryId: string;
-  productNames: string[];
+  // Step 2 — catalog (single fully-detailed product)
+  product: ProductDraft;
 }
+
+const INITIAL_PRODUCT: ProductDraft = {
+  name: '',
+  description: '',
+  categoryId: '',
+  price: '',
+  unit: 'piece',
+  minOrderQty: '1',
+  stockStatus: 'in_stock',
+};
 
 const INITIAL_STATE: FormState = {
   city: '',
   pincode: '',
   panNumber: '',
   gstNumber: '',
-  categoryId: '',
-  productNames: ['', '', ''],
+  product: { ...INITIAL_PRODUCT },
 };
 
 /**
@@ -47,8 +70,9 @@ const INITIAL_STATE: FormState = {
  * `useSellAction`). Existing sellers/admins skip the modal entirely.
  *
  * Step 1 collects only the four business/verification fields the user
- * asked for (`city`, `pincode`, `panNumber`, `gstNumber`); step 2 mirrors
- * the previous catalog screen (default category + ≥3 product names).
+ * asked for (`city`, `pincode`, `panNumber`, `gstNumber`); step 2 collects
+ * one fully-detailed product (name, description, price, MOQ, unit, stock
+ * status, optional specs) so the seller's first listing is publish-ready.
  */
 export function SellerSignupModal() {
   const dispatch = useAppDispatch();
@@ -67,7 +91,7 @@ export function SellerSignupModal() {
   useEffect(() => {
     if (open) {
       setStep(0);
-      setForm(INITIAL_STATE);
+      setForm({ ...INITIAL_STATE, product: { ...INITIAL_PRODUCT } });
       setStepError(null);
       dispatch(clearError());
     }
@@ -99,30 +123,12 @@ export function SellerSignupModal() {
     [categoryTree],
   );
 
-  const filledProductCount = form.productNames.filter((n) => n.trim().length >= 3).length;
-
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function updateProduct(index: number, value: string) {
-    setForm((prev) => {
-      const next = [...prev.productNames];
-      next[index] = value;
-      return { ...prev, productNames: next };
-    });
-  }
-
-  function addProduct() {
-    setForm((prev) => ({ ...prev, productNames: [...prev.productNames, ''] }));
-  }
-
-  function removeProduct(index: number) {
-    setForm((prev) => {
-      if (prev.productNames.length <= MIN_PRODUCTS) return prev;
-      const next = prev.productNames.filter((_, i) => i !== index);
-      return { ...prev, productNames: next };
-    });
+  function updateProduct<K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) {
+    setForm((prev) => ({ ...prev, product: { ...prev.product, [key]: value } }));
   }
 
   function handleClose() {
@@ -145,8 +151,23 @@ export function SellerSignupModal() {
     }
 
     if (currentStep === 1) {
-      if (filledProductCount < MIN_PRODUCTS) {
-        return `Please add at least ${MIN_PRODUCTS} product names (3+ chars each)`;
+      const p = form.product;
+      if (p.name.trim().length < 3) {
+        return 'Product name must be at least 3 characters';
+      }
+      if (p.description.trim().length < 3) {
+        return 'Please add a product description';
+      }
+      const priceNum = Number(p.price);
+      if (!p.price || Number.isNaN(priceNum) || priceNum < 0) {
+        return 'Please enter a valid price (0 or more)';
+      }
+      const moqNum = Number(p.minOrderQty);
+      if (!Number.isInteger(moqNum) || moqNum < 1) {
+        return 'Minimum order quantity must be a whole number ≥ 1';
+      }
+      if (!p.unit.trim()) {
+        return 'Please specify a unit (e.g. piece, kg, meter)';
       }
       return null;
     }
@@ -177,20 +198,24 @@ export function SellerSignupModal() {
       return;
     }
 
-    const products: SellerSignupProduct[] = form.productNames
-      .map((n) => n.trim())
-      .filter((n) => n.length >= 3)
-      .map((n) => ({
-        name: n,
-        ...(form.categoryId ? { categoryId: form.categoryId } : {}),
-      }));
+    const p = form.product;
+
+    const product: SellerSignupProduct = {
+      name: p.name.trim(),
+      description: p.description.trim(),
+      price: Number(p.price),
+      unit: p.unit.trim() || 'piece',
+      minOrderQty: Number(p.minOrderQty),
+      stockStatus: p.stockStatus,
+      ...(p.categoryId ? { categoryId: p.categoryId } : {}),
+    };
 
     const payload: UpgradeToSellerPayload = {
       ...(form.city.trim() ? { city: form.city.trim() } : {}),
       ...(form.pincode.trim() ? { pincode: form.pincode.trim() } : {}),
       ...(form.panNumber.trim() ? { panNumber: form.panNumber.trim().toUpperCase() } : {}),
       ...(form.gstNumber.trim() ? { gstNumber: form.gstNumber.trim().toUpperCase() } : {}),
-      products,
+      products: [product],
     };
 
     const result = await dispatch(upgradeToSellerThunk(payload));
@@ -209,7 +234,7 @@ export function SellerSignupModal() {
       open={open}
       onClose={handleClose}
       title="Become a seller"
-      subtitle="Just two quick steps — share your business details, then a few products to seed your catalog."
+      subtitle="Just two quick steps — share your business details, then add your first product to seed your catalog."
       widthClassName="max-w-2xl"
       footer={
         <div className="flex items-center justify-between gap-3">
@@ -321,63 +346,78 @@ export function SellerSignupModal() {
 
         {step === 1 && (
           <div className="space-y-4">
-            <Select
-              name="categoryId"
-              label="Default product category"
-              hint="Applied to every product below. You can change individual categories later."
-              value={form.categoryId}
-              onChange={(e) => update('categoryId', e.target.value)}
-              placeholder="Choose a category (optional — defaults to General)"
-              options={flatCategories.map((c) => ({
-                value: c.id,
-                label: c.label,
-              }))}
-            />
+            <p className="text-xs text-ink-500">
+              Add your first product with full details. You can add more products from the
+              seller dashboard once you&apos;re registered.
+            </p>
 
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="block text-xs font-medium text-ink-700">
-                  Product names ({filledProductCount}/{form.productNames.length})
-                </label>
-                <span className="text-[11px] text-ink-500">
-                  Minimum {MIN_PRODUCTS} products required
-                </span>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <Input
+                  name="product-name"
+                  label="Product name"
+                  required
+                  value={form.product.name}
+                  onChange={(e) => updateProduct('name', e.target.value)}
+                  minLength={3}
+                  maxLength={220}
+                  placeholder="Industrial Ball Bearing 6203"
+                />
               </div>
-              <div className="space-y-2">
-                {form.productNames.map((value, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <Input
-                      name={`product-${idx}`}
-                      value={value}
-                      onChange={(e) => updateProduct(idx, e.target.value)}
-                      placeholder={`Product ${idx + 1}`}
-                      minLength={3}
-                      maxLength={220}
-                      className="flex-1"
-                    />
-                    {form.productNames.length > MIN_PRODUCTS && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => removeProduct(idx)}
-                        aria-label={`Remove product ${idx + 1}`}
-                      >
-                        ✕
-                      </Button>
-                    )}
-                  </div>
-                ))}
+              <Select
+                name="product-categoryId"
+                label="Category"
+                value={form.product.categoryId}
+                onChange={(e) => updateProduct('categoryId', e.target.value)}
+                placeholder="Choose a category (optional — defaults to General)"
+                options={flatCategories.map((c) => ({ value: c.id, label: c.label }))}
+              />
+              <Select
+                name="product-stockStatus"
+                label="Stock status"
+                value={form.product.stockStatus}
+                onChange={(e) => updateProduct('stockStatus', e.target.value as StockStatus)}
+                options={STOCK_OPTIONS}
+              />
+              <Input
+                name="product-price"
+                label="Price (₹)"
+                type="number"
+                step="0.01"
+                min={0}
+                required
+                value={form.product.price}
+                onChange={(e) => updateProduct('price', e.target.value)}
+                placeholder="250"
+              />
+              <Input
+                name="product-unit"
+                label="Unit"
+                required
+                value={form.product.unit}
+                onChange={(e) => updateProduct('unit', e.target.value)}
+                hint="e.g. piece, kg, meter, dozen"
+              />
+              <Input
+                name="product-minOrderQty"
+                label="Min. order qty"
+                type="number"
+                min={1}
+                required
+                value={form.product.minOrderQty}
+                onChange={(e) => updateProduct('minOrderQty', e.target.value)}
+              />
+              <div className="sm:col-span-2">
+                <Textarea
+                  name="product-description"
+                  label="Description"
+                  required
+                  value={form.product.description}
+                  onChange={(e) => updateProduct('description', e.target.value)}
+                  rows={4}
+                  placeholder="Describe materials, dimensions, certifications, intended use…"
+                />
               </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={addProduct}
-                className="mt-3"
-              >
-                + Add another product
-              </Button>
             </div>
           </div>
         )}

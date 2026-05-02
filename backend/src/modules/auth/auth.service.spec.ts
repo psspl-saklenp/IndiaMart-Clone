@@ -222,9 +222,15 @@ describe('AuthService', () => {
       panNumber: 'ABCDE1234F',
       gstNumber: '27ABCDE1234F1Z5',
       products: [
-        { name: 'Industrial Bearing 6203' },
-        { name: 'Coupling Sleeve 22mm' },
-        { name: 'Rotary Encoder Module' },
+        {
+          name: 'Industrial Bearing 6203',
+          description: 'High-precision sealed deep-groove ball bearing.',
+          price: 250,
+          unit: 'piece',
+          minOrderQty: 10,
+          stockStatus: 'in_stock' as const,
+          currency: 'INR',
+        },
       ],
     };
 
@@ -264,8 +270,21 @@ describe('AuthService', () => {
         pincode: '400001',
       });
 
-      // All three seed products are created.
-      expect(productModel.create).toHaveBeenCalledTimes(3);
+      // The single fully-detailed seed product is created with the values
+      // supplied by the seller (no placeholder description / price).
+      expect(productModel.create).toHaveBeenCalledTimes(1);
+      const productArgs = productModel.create.mock.calls[0]?.[0];
+      expect(productArgs).toMatchObject({
+        sellerId: 'user-uuid-1',
+        name: 'Industrial Bearing 6203',
+        description: 'High-precision sealed deep-groove ball bearing.',
+        price: '250.00',
+        currency: 'INR',
+        minOrderQty: 10,
+        unit: 'piece',
+        stockStatus: 'in_stock',
+        isActive: true,
+      });
 
       // Tokens reissued and last-login bumped.
       expect(usersService.updateLastLogin).toHaveBeenCalledWith('user-uuid-1');

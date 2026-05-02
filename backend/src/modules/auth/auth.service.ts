@@ -290,9 +290,10 @@ export class AuthService {
 
   /**
    * Creates the seed product list shared by both seller signup paths
-   * (`registerSeller` and `upgradeToSeller`). Each row lands as an inactive
-   * draft so the seller still gets to review prices/descriptions before the
-   * catalog is published.
+   * (`registerSeller` and `upgradeToSeller`). The signup form now asks for
+   * one fully-detailed product (description, price, MOQ, unit, stock
+   * status, etc.), so each row is persisted with the values supplied by
+   * the user instead of placeholder defaults.
    */
   private async seedSellerProducts(
     transaction: Transaction,
@@ -318,15 +319,17 @@ export class AuthService {
           categoryId,
           name: item.name,
           slug,
-          description: item.name,
-          price: (item.price ?? 0).toFixed(2),
-          currency: 'INR',
-          minOrderQty: 1,
-          unit: 'piece',
-          stockStatus: 'in_stock',
-          // Drafts: keep them out of the public catalog until the seller
-          // edits them with real descriptions / prices.
-          isActive: false,
+          description: item.description,
+          specifications: item.specifications ?? null,
+          price: item.price.toFixed(2),
+          currency: item.currency ?? 'INR',
+          minOrderQty: item.minOrderQty ?? 1,
+          unit: item.unit ?? 'piece',
+          stockStatus: item.stockStatus ?? 'in_stock',
+          // Default to active because the seller has now provided every
+          // required detail. Sellers can still toggle visibility later from
+          // the seller dashboard.
+          isActive: item.isActive ?? true,
         } as Product,
         { transaction },
       );
