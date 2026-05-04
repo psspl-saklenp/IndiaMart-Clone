@@ -39,7 +39,7 @@ export function BuyerAppBar() {
             iC
           </span>
           <span className="hidden text-lg font-semibold tracking-tight sm:inline">
-            indiamart-<span className="text-amber-300">clone</span>
+            indiamart-<span className="text-yellow-300">clone</span>
           </span>
         </Link>
 

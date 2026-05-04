@@ -95,7 +95,7 @@ export function SellerSidebar() {
                     <span
                       className={cn(
                         'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                        item.badge.tone === 'amber' && 'bg-amber-100 text-amber-700',
+                        item.badge.tone === 'amber' && 'bg-yellow-100 text-yellow-700',
                         item.badge.tone === 'teal' &&
                           'bg-[var(--color-im-teal-100)] text-[var(--color-im-teal-700)]',
                         item.badge.tone === 'rose' && 'bg-rose-100 text-rose-700',

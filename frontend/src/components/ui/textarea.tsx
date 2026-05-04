@@ -28,10 +28,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         aria-invalid={Boolean(error)}
         className={cn(
           'block w-full rounded-md border bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400',
-          'focus:outline-none focus:ring-2 focus:ring-offset-1',
+          'focus:outline-none',
           error
-            ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
-            : 'border-ink-200 focus:border-brand-400 focus:ring-brand-200',
+            ? 'border-red-400 focus:border-red-500'
+            : 'border-ink-200 focus:border-ink-400',
           'min-h-24',
           className,
         )}

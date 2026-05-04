@@ -30,7 +30,7 @@ const FAQS: FaqItem[] = [
     category: 'Buying',
     question: 'How do I post a requirement (RFQ)?',
     answer:
-      'Click the orange "Post RFQ" button at the top of your dashboard or open Buyers Tool Kit → Post Your Requirement. Fill in the product name, quantity, and any specifications. Verified suppliers usually respond within 24 hours.',
+      'Click the "Post RFQ" button at the top of your dashboard or open Buyers Tool Kit → Post Your Requirement. Fill in the product name, quantity, and any specifications. Verified suppliers usually respond within 24 hours.',
   },
   {
     category: 'Buying',

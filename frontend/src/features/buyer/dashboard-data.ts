@@ -75,11 +75,11 @@ export interface PlaceholderBrand {
 }
 
 export const PLACEHOLDER_BRANDS: PlaceholderBrand[] = [
-  { name: 'NorthPeak', tagline: 'Industrial group', colorClass: 'text-amber-700' },
+  { name: 'NorthPeak', tagline: 'Industrial group', colorClass: 'text-yellow-700' },
   { name: 'Verdant Co.', tagline: 'Appliances', colorClass: 'text-emerald-700' },
   { name: 'Crimson Forge', tagline: 'Engineering', colorClass: 'text-rose-700' },
   { name: 'Blueline Tech', tagline: 'Automation', colorClass: 'text-sky-700' },
-  { name: 'Saffron Mobility', tagline: 'Transport', colorClass: 'text-orange-700' },
+  { name: 'Saffron Mobility', tagline: 'Transport', colorClass: 'text-violet-700' },
 ];
 
 /* -------------------------------------------------------------------------
@@ -158,7 +158,7 @@ export const TESTIMONIALS: Testimonial[] = [
     role: 'Electronics wholesaler',
     quote:
       'Sourcing electrical components used to take days. Now I shortlist three suppliers in an afternoon and place a trial order the same week.',
-    thumbColorClass: 'bg-gradient-to-br from-amber-200 to-rose-200',
+    thumbColorClass: 'bg-gradient-to-br from-yellow-200 to-rose-200',
   },
   {
     name: 'Meera P.',
@@ -179,7 +179,7 @@ export const TESTIMONIALS: Testimonial[] = [
     role: 'Garment manufacturer',
     quote:
       'I was sceptical about online B2B but the verified-supplier badge gave me the confidence to scale my procurement.',
-    thumbColorClass: 'bg-gradient-to-br from-rose-200 to-orange-200',
+    thumbColorClass: 'bg-gradient-to-br from-rose-200 to-pink-200',
   },
 ];
 

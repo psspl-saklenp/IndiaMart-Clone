@@ -2,22 +2,25 @@
 
 /* ----------------------------------------------------------------------
    Theme tokens (Tailwind v4 CSS-first config)
-   B2B marketplace palette: warm orange primary + sunny secondary +
+   B2B marketplace palette: teal primary + lemon-yellow secondary +
    navy text on neutral surfaces. Density-tuned for info-rich pages.
 ---------------------------------------------------------------------- */
 @theme {
-  --color-brand-50: #fff7ed;
-  --color-brand-100: #ffedd5;
-  --color-brand-200: #fed7aa;
-  --color-brand-300: #fdba74;
-  --color-brand-400: #fb923c;
-  --color-brand-500: #f97316;
-  --color-brand-600: #ea580c;
-  --color-brand-700: #c2410c;
-  --color-brand-800: #9a3412;
-  --color-brand-900: #7c2d12;
+  /* Primary brand palette — teal centred on #1d8488. Every `bg-brand-*`
+     / `text-brand-*` token across the app picks up these values
+     automatically. */
+  --color-brand-50: #effafa;
+  --color-brand-100: #d3f0f1;
+  --color-brand-200: #a8e0e3;
+  --color-brand-300: #74cacf;
+  --color-brand-400: #41b0b6;
+  --color-brand-500: #28999e;
+  --color-brand-600: #1d8488;
+  --color-brand-700: #176a6d;
+  --color-brand-800: #155558;
+  --color-brand-900: #144749;
 
-  /* Sun-yellow secondary used for high-emphasis CTAs ("Get best price") */
+  /* Lemon-yellow secondary used for high-emphasis CTAs ("Get best price"). */
   --color-sun-50: #fefce8;
   --color-sun-100: #fef9c3;
   --color-sun-200: #fef08a;
@@ -47,8 +50,8 @@
 
   /* ----------------------------------------------------------------------
      Buyer-area palette
-     A separate set of tokens used only inside `(buyer)/*` routes so the
-     public marketplace keeps its warm-orange identity.
+     A separate set of tokens used only inside `(buyer)/*` routes that
+     share the navy/teal identity but with their own pastel tile colors.
   ---------------------------------------------------------------------- */
   /* Deep navy/indigo — used by the buyer-area top app bar and accents. */
   --color-im-navy-50: #eef2ff;
@@ -62,17 +65,18 @@
   --color-im-navy-800: #3730a3;
   --color-im-navy-900: #312e81;
 
-  /* Teal / sea-green — primary CTA in the buyer area (Search, Get Quotes). */
-  --color-im-teal-50: #f0fdfa;
-  --color-im-teal-100: #ccfbf1;
-  --color-im-teal-200: #99f6e4;
-  --color-im-teal-300: #5eead4;
-  --color-im-teal-400: #2dd4bf;
-  --color-im-teal-500: #14b8a6;
-  --color-im-teal-600: #0d9488;
-  --color-im-teal-700: #0f766e;
-  --color-im-teal-800: #115e59;
-  --color-im-teal-900: #134e4a;
+  /* Teal — primary CTA in the buyer area (Search, Get Quotes), centred on
+     #1d8488 to match the global brand palette. */
+  --color-im-teal-50: #effafa;
+  --color-im-teal-100: #d3f0f1;
+  --color-im-teal-200: #a8e0e3;
+  --color-im-teal-300: #74cacf;
+  --color-im-teal-400: #41b0b6;
+  --color-im-teal-500: #28999e;
+  --color-im-teal-600: #1d8488;
+  --color-im-teal-700: #176a6d;
+  --color-im-teal-800: #155558;
+  --color-im-teal-900: #144749;
 
   /* Indigo — secondary CTA (Post RFQ). */
   --color-im-indigo-50: #eef2ff;
@@ -88,8 +92,8 @@
   --color-im-tile-emerald-fg: #047857;
   --color-im-tile-rose-bg: #fff1f2;
   --color-im-tile-rose-fg: #be123c;
-  --color-im-tile-amber-bg: #fffbeb;
-  --color-im-tile-amber-fg: #b45309;
+  --color-im-tile-amber-bg: #fefce8;
+  --color-im-tile-amber-fg: #a16207;
 }
 
 /* Base resets */
@@ -106,8 +110,3 @@ body {
   line-height: 1.45;
 }
 
-/* Subtle focus ring across the app */
-:focus-visible {
-  outline: 2px solid var(--color-brand-500);
-  outline-offset: 2px;
-}

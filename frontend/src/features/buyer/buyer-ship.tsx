@@ -80,8 +80,8 @@ const TRANSPORTERS: Transporter[] = [
     id: 't-2',
     name: 'SafeHaul Roadways',
     initials: 'SH',
-    logoBg: 'bg-amber-100',
-    logoFg: 'text-amber-700',
+    logoBg: 'bg-yellow-100',
+    logoFg: 'text-yellow-700',
     address: 'Dilshad Garden, New Delhi',
     trustSealVerified: true,
     rating: 3.9,
@@ -865,7 +865,7 @@ function StarIcon({ state }: { state: 'full' | 'half' | 'empty' }) {
   const gradientId = `star-half-${state}`;
   const fill =
     state === 'full'
-      ? '#f59e0b'
+      ? '#eab308'
       : state === 'half'
       ? `url(#${gradientId})`
       : '#e5e7eb';
@@ -874,7 +874,7 @@ function StarIcon({ state }: { state: 'full' | 'half' | 'empty' }) {
       {state === 'half' && (
         <defs>
           <linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="0">
-            <stop offset="50%" stopColor="#f59e0b" />
+            <stop offset="50%" stopColor="#eab308" />
             <stop offset="50%" stopColor="#e5e7eb" />
           </linearGradient>
         </defs>

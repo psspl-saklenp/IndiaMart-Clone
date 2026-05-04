@@ -40,9 +40,9 @@ export function SellerTopBar() {
             iC
           </span>
           <span className="hidden text-lg font-semibold tracking-tight sm:inline">
-            indiamart-<span className="text-amber-300">clone</span>
+            indiamart-<span className="text-yellow-300">clone</span>
           </span>
-          <span className="ml-1 rounded bg-amber-300/90 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-im-navy-900)]">
+          <span className="ml-1 rounded bg-yellow-300/90 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-im-navy-900)]">
             Seller
           </span>
         </Link>
@@ -143,7 +143,7 @@ function UtilityLink({
         {badge && (
           <span
             aria-label={`${badge} unread`}
-            className="absolute -right-2 -top-1 flex size-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[9px] font-semibold text-[var(--color-im-navy-900)]"
+            className="absolute -right-2 -top-1 flex size-4 min-w-4 items-center justify-center rounded-full bg-yellow-400 px-1 text-[9px] font-semibold text-[var(--color-im-navy-900)]"
           >
             {badge}
           </span>

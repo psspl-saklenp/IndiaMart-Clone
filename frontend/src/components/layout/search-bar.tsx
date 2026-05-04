@@ -139,7 +139,7 @@ export function SearchBar({
       <form
         onSubmit={onSubmit}
         role="search"
-        className="flex w-full items-center overflow-hidden rounded-md border border-ink-200 bg-white text-sm focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-200"
+        className="flex w-full items-center overflow-hidden rounded-md border border-ink-200 bg-white text-sm focus-within:border-ink-400"
       >
         <input
           type="search"

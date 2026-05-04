@@ -241,11 +241,11 @@ function ProfileHeaderCard({
       <div className="mt-5">
         <div className="mb-1 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-ink-500">
           <span>Profile Strength</span>
-          <span className="text-amber-600">{strength}%</span>
+          <span className="text-[var(--color-im-teal-700)]">{strength}%</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-ink-100">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-[width] duration-500"
+            className="h-full rounded-full bg-gradient-to-r from-[var(--color-im-teal-400)] to-[var(--color-im-teal-600)] transition-[width] duration-500"
             style={{ width: `${strength}%` }}
           />
         </div>
