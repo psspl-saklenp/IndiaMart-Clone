@@ -65,7 +65,7 @@ const COLUMNS: FooterColumn[] = [
 export function BuyerFooter() {
   return (
     <footer className="border-t border-ink-200 bg-white">
-      <div className="mx-auto max-w-7xl px-4 py-10">
+      <div className="mx-auto max-w-[96rem] px-4 py-10">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-3 lg:grid-cols-5">
           {COLUMNS.map((col, idx) => (
             <FooterColumnView key={col.title ?? idx} column={col} />
@@ -74,7 +74,7 @@ export function BuyerFooter() {
       </div>
 
       <div className="border-t border-ink-100 bg-ink-50">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 px-4 py-5 text-xs text-ink-500 sm:flex-row sm:justify-between">
+        <div className="mx-auto flex max-w-[96rem] flex-col items-center gap-3 px-4 py-5 text-xs text-ink-500 sm:flex-row sm:justify-between">
           <div className="flex items-center gap-3">
             <SocialIcon name="facebook" />
             <SocialIcon name="x" />

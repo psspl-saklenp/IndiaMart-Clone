@@ -18,7 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <Protected allow={['admin']}>
       <div className="flex min-h-screen flex-col">
         <Navbar />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+        <main className="mx-auto w-full max-w-[96rem] flex-1 px-4 py-8">
           <aside className="mb-6 flex flex-wrap items-center gap-3 border-b border-ink-200 pb-4">
             <p className="text-xs uppercase tracking-wide text-ink-500">Admin</p>
             <nav className="flex flex-wrap gap-3 text-sm">

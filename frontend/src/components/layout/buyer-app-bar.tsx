@@ -29,7 +29,7 @@ export function BuyerAppBar() {
 
   return (
     <header className="sticky top-0 z-30 w-full bg-[var(--color-im-navy-800)] text-white shadow-md">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4">
+      <div className="mx-auto flex h-14 max-w-[96rem] items-center gap-4 px-4">
         {/* Wordmark */}
         <Link href="/me/dashboard" className="flex items-center gap-2">
           <span

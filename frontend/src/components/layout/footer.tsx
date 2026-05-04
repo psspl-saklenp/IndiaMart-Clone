@@ -16,7 +16,7 @@ export async function Footer() {
 
   return (
     <footer className="mt-16 border-t border-ink-200 bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-12">
+      <div className="mx-auto max-w-[96rem] px-4 py-12">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 lg:grid-cols-5">
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="text-base font-bold tracking-tight text-ink-900">
@@ -80,7 +80,7 @@ export async function Footer() {
       </div>
 
       <div className="border-t border-ink-100 bg-ink-50">
-        <div className="mx-auto flex max-w-6xl flex-col items-start gap-2 px-4 py-4 text-xs text-ink-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-[96rem] flex-col items-start gap-2 px-4 py-4 text-xs text-ink-500 sm:flex-row sm:items-center sm:justify-between">
           <p>© {CURRENT_YEAR} indiamart-clone. Educational replica; not affiliated with IndiaMART.</p>
           <p>Made for the AI Acceleration Month vibe-coding activity.</p>
         </div>

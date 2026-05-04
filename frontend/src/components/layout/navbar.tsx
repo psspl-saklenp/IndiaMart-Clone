@@ -27,7 +27,7 @@ export function Navbar() {
     <header className="sticky top-0 z-30 border-b border-ink-200 bg-white shadow-sm">
       {/* Utility ribbon */}
       <div className="hidden border-b border-ink-100 bg-ink-50 text-[11px] text-ink-500 sm:block">
-        <div className="mx-auto flex h-7 max-w-6xl items-center justify-end gap-4 px-4">
+        <div className="mx-auto flex h-7 max-w-[96rem] items-center justify-end gap-4 px-4">
           <Link href="/requirements/new" className="hover:text-ink-900">
             Get best price
           </Link>
@@ -55,7 +55,7 @@ export function Navbar() {
       </div>
 
       {/* Main bar */}
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+      <div className="mx-auto flex h-14 max-w-[96rem] items-center gap-3 px-4">
         <Link href="/" className="text-lg font-bold tracking-tight text-ink-900">
           indiamart-<span className="text-brand-600">clone</span>
         </Link>

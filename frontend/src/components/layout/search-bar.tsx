@@ -161,7 +161,7 @@ export function SearchBar({
         />
         <button
           type="submit"
-          className="bg-brand-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-brand-700"
+          className="bg-[var(--color-im-teal-600)] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-im-teal-700)]"
         >
           Search
         </button>

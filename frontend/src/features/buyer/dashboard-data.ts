@@ -183,22 +183,3 @@ export const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
-/* -------------------------------------------------------------------------
-   City list for the dashboard search row
-   ----------------------------------------------------------------------- */
-
-/** A small sample of Indian cities. Extend later via a real geo dataset. */
-export const CITY_OPTIONS = [
-  'All India',
-  'Ahmedabad',
-  'Bangalore',
-  'Chennai',
-  'Delhi',
-  'Hyderabad',
-  'Jaipur',
-  'Kolkata',
-  'Mumbai',
-  'Pune',
-  'Rajkot',
-  'Surat',
-];

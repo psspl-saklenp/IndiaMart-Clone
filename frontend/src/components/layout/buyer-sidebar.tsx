@@ -35,7 +35,7 @@ export function BuyerSidebar() {
   ];
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col self-start rounded-md border border-ink-200 bg-white shadow-sm lg:flex">
+    <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 -mt-6 flex-col self-start overflow-y-auto rounded-b-md border-x border-b border-ink-200 bg-white shadow-sm lg:flex">
       {/* Profile header */}
       <div className="border-b border-ink-200 p-4">
         <div className="flex items-center gap-3">

@@ -24,7 +24,7 @@ export function SellerTopBar() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-ink-200 bg-white shadow-sm">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
+      <div className="mx-auto flex h-14 max-w-[96rem] items-center gap-4 px-4">
         <Link
           href="/seller/dashboard"
           className="text-lg font-bold tracking-tight text-ink-900"
