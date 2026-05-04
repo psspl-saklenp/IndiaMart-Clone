@@ -1,42 +1,18 @@
-import Link from 'next/link';
-
+import { SellerSidebar } from '@/components/layout/seller-sidebar';
 import { SellerTopBar } from '@/components/layout/seller-top-bar';
 import { Protected } from '@/features/auth/protected';
 
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   return (
     <Protected allow={['seller', 'admin']}>
-      <SellerTopBar />
-      <div className="mx-auto max-w-[96rem] px-4 py-8">
-        <aside className="mb-6 flex flex-wrap items-center gap-3 border-b border-ink-200 pb-4">
-          <p className="text-xs uppercase tracking-wide text-ink-500">Seller</p>
-          <nav className="flex flex-wrap gap-3 text-sm">
-            <Link href="/seller/dashboard" className="text-ink-700 hover:text-brand-700">
-              Dashboard
-            </Link>
-            <Link href="/seller/products" className="text-ink-700 hover:text-brand-700">
-              Products
-            </Link>
-            <Link
-              href="/seller/products/new"
-              className="text-ink-700 hover:text-brand-700"
-            >
-              + New product
-            </Link>
-            <Link href="/seller/inquiries" className="text-ink-700 hover:text-brand-700">
-              Inquiries
-            </Link>
-            <Link href="/seller/leads" className="text-ink-700 hover:text-brand-700">
-              Buy leads
-            </Link>
-            {/* Profile lives on the shared buyer page so the seller and
-                buyer share one Business Details surface. */}
-            <Link href="/me/profile" className="text-ink-700 hover:text-brand-700">
-              Profile
-            </Link>
-          </nav>
-        </aside>
-        {children}
+      <div className="flex min-h-screen flex-col bg-ink-50">
+        <SellerTopBar />
+        <div className="mx-auto w-full max-w-[96rem] flex-1 px-4 py-8">
+          <div className="flex flex-col gap-6 lg:flex-row">
+            <SellerSidebar />
+            <main className="min-w-0 flex-1">{children}</main>
+          </div>
+        </div>
       </div>
     </Protected>
   );
