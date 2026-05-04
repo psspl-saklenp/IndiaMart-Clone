@@ -277,3 +277,5 @@ Max upload size and accepted MIME types (`image/jpeg|png|webp|gif`) are reported
 - 6 top-level categories (Apparel & Fashion, Electronics & Electrical, Industrial Supplies, Building & Construction, Agriculture, Food & Beverages) with 5 sub-categories each.
 - A `general` fallback category used by the multi-step seller signup when the seller doesn't explicitly assign one.
 - Admin user (`admin@indiamart.local` / `ChangeMe@123`) for catalog and platform moderation.
+#   I n d i a M a r t - C l o n e  
+ 
