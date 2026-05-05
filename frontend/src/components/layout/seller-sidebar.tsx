@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { useInquiryCounts } from '@/features/inquiries/use-inquiry-counts';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 
@@ -11,8 +10,6 @@ interface SidebarItem {
   label: string;
   href: string;
   icon: React.ReactNode;
-  /** Optional small badge (e.g. unread count). */
-  badge?: { text: string; tone: 'amber' | 'teal' | 'rose' | 'brand' };
 }
 
 /**
@@ -23,8 +20,6 @@ interface SidebarItem {
 export function SellerSidebar() {
   const { user } = useAuth();
   const pathname = usePathname();
-  const { data: counts } = useInquiryCounts();
-  const sellerCount = counts?.asSeller ?? 0;
 
   const initial = (user?.name ?? 'S').charAt(0).toUpperCase();
   const displayName = user?.name ?? 'My business';
@@ -36,10 +31,6 @@ export function SellerSidebar() {
       label: 'Inquiries',
       href: '/seller/inquiries',
       icon: <IconMail />,
-      badge:
-        sellerCount > 0
-          ? { text: sellerCount > 9 ? '9+' : String(sellerCount), tone: 'brand' }
-          : undefined,
     },
     { label: 'Buy leads', href: '/seller/leads', icon: <IconLead /> },
   ];
@@ -91,20 +82,6 @@ export function SellerSidebar() {
                     {item.icon}
                   </span>
                   <span className="flex-1 truncate">{item.label}</span>
-                  {item.badge && (
-                    <span
-                      className={cn(
-                        'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                        item.badge.tone === 'amber' && 'bg-yellow-100 text-yellow-700',
-                        item.badge.tone === 'teal' &&
-                          'bg-[var(--color-im-teal-100)] text-[var(--color-im-teal-700)]',
-                        item.badge.tone === 'rose' && 'bg-rose-100 text-rose-700',
-                        item.badge.tone === 'brand' && 'bg-brand-600 text-white',
-                      )}
-                    >
-                      {item.badge.text}
-                    </span>
-                  )}
                 </Link>
               </li>
             );

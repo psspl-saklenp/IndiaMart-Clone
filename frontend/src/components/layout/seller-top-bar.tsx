@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { useInquiryCounts } from '@/features/inquiries/use-inquiry-counts';
 import { useAuth } from '@/hooks/use-auth';
 import { useLogout } from '@/hooks/use-logout';
 import { cn } from '@/lib/utils';
@@ -13,15 +12,12 @@ import { cn } from '@/lib/utils';
  *
  * Uses the same navy palette as the buyer app bar so the authenticated shell
  * feels coherent across roles, but surfaces seller-specific quick actions:
- * an inquiries link with an unread badge, a help shortcut, and the profile
- * dropdown.
+ * an inquiries link, a help shortcut, and the profile dropdown.
  */
 export function SellerTopBar() {
   const { user } = useAuth();
   const handleLogout = useLogout();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { data: counts } = useInquiryCounts();
-  const sellerCount = counts?.asSeller ?? 0;
 
   const firstName = user?.name?.split(' ')[0] ?? 'there';
 
@@ -52,7 +48,6 @@ export function SellerTopBar() {
             href="/seller/inquiries"
             icon={<IconChat />}
             label="Inquiries"
-            badge={sellerCount > 0 ? (sellerCount > 9 ? '9+' : String(sellerCount)) : undefined}
           />
           <UtilityLink href="#" icon={<IconHelp />} label="Help" />
 
@@ -126,12 +121,10 @@ function UtilityLink({
   href,
   icon,
   label,
-  badge,
 }: {
   href: string;
   icon: React.ReactNode;
   label: string;
-  badge?: string;
 }) {
   return (
     <Link
@@ -140,14 +133,6 @@ function UtilityLink({
     >
       <span aria-hidden className="relative">
         {icon}
-        {badge && (
-          <span
-            aria-label={`${badge} unread`}
-            className="absolute -right-2 -top-1 flex size-4 min-w-4 items-center justify-center rounded-full bg-yellow-400 px-1 text-[9px] font-semibold text-[var(--color-im-navy-900)]"
-          >
-            {badge}
-          </span>
-        )}
       </span>
       <span>{label}</span>
     </Link>
