@@ -4,24 +4,28 @@ import { useQueries } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { Sparkline } from '@/components/charts/sparkline';
 import { Badge } from '@/components/ui/badge';
-import { getStats, getTimeseries, getTopProducts } from '@/features/dashboard/api';
+import { getStats, getTopProducts } from '@/features/dashboard/api';
+import { listInquiries } from '@/features/inquiries/api';
 import type { DashboardTopProduct } from '@/types/dashboard';
+import type { InquirySummary } from '@/types/inquiries';
 
 export function SellerDashboard() {
   const [topBy, setTopBy] = useState<'views' | 'inquiries'>('views');
 
-  const [statsQ, tsQ, topQ] = useQueries({
+  const [statsQ, recentQ, topQ] = useQueries({
     queries: [
       { queryKey: ['dash-stats'], queryFn: getStats },
-      { queryKey: ['dash-ts', 30], queryFn: () => getTimeseries(30) },
+      {
+        queryKey: ['dash-recent-inquiries'],
+        queryFn: () => listInquiries({ side: 'seller', limit: 5 }),
+      },
       { queryKey: ['dash-top', topBy], queryFn: () => getTopProducts(topBy, 5) },
     ],
   });
 
   const stats = statsQ.data;
-  const ts = tsQ.data;
+  const recent = recentQ.data?.data ?? [];
   const top = topQ.data;
 
   const last30 = stats?.last30dInquiries ?? 0;
@@ -70,20 +74,29 @@ export function SellerDashboard() {
 
       <section className="rounded-lg border border-ink-200 bg-white p-5">
         <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-base font-semibold text-ink-900">Inquiries received · last 30 days</h2>
-          {tsQ.data && (
-            <span className="text-xs text-ink-500">
-              {tsQ.data.reduce((acc, p) => acc + p.count, 0)} total
-            </span>
-          )}
+          <h2 className="text-base font-semibold text-ink-900">Recent inquiries</h2>
+          <Link
+            href="/seller/inquiries"
+            className="text-xs font-medium text-brand-700 hover:underline"
+          >
+            View all →
+          </Link>
         </div>
-        {tsQ.isLoading && <p className="text-sm text-ink-500">Loading chart…</p>}
-        {ts && (
-          <Sparkline
-            values={ts.map((p) => p.count)}
-            labels={ts.map((p) => p.date)}
-            height={120}
-          />
+
+        {recentQ.isLoading && <p className="text-sm text-ink-500">Loading…</p>}
+
+        {!recentQ.isLoading && recent.length === 0 && (
+          <p className="rounded-md border border-dashed border-ink-200 bg-white px-4 py-8 text-center text-sm text-ink-500">
+            No inquiries yet. Once buyers reach out, the latest ones will appear here.
+          </p>
+        )}
+
+        {recent.length > 0 && (
+          <ul className="divide-y divide-ink-200 overflow-hidden rounded-md border border-ink-200">
+            {recent.map((inquiry) => (
+              <RecentInquiryRow key={inquiry.id} inquiry={inquiry} />
+            ))}
+          </ul>
         )}
       </section>
 
@@ -214,6 +227,81 @@ function TopProductRow({
       </Link>
     </li>
   );
+}
+
+const STATUS_TONE = {
+  new: 'info',
+  responded: 'success',
+  closed: 'neutral',
+} as const;
+
+function RecentInquiryRow({ inquiry }: { inquiry: InquirySummary }) {
+  return (
+    <li>
+      <Link
+        href={`/seller/inquiries/${inquiry.id}`}
+        className="flex items-center gap-3 px-4 py-3 hover:bg-ink-50"
+      >
+        <div className="size-10 flex-shrink-0 overflow-hidden rounded-md bg-ink-100">
+          {inquiry.product?.primaryImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={inquiry.product.primaryImageUrl}
+              alt={inquiry.product.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[10px] text-ink-400">
+              no img
+            </div>
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-sm font-semibold text-ink-900">{inquiry.subject}</p>
+            {inquiry.unreadForViewer && (
+              <span
+                className="size-2 flex-shrink-0 rounded-full bg-brand-500"
+                aria-label="unread"
+              />
+            )}
+          </div>
+          <p className="truncate text-xs text-ink-500">
+            From: {inquiry.buyer.name}
+            {inquiry.product && <> · {inquiry.product.name}</>}
+          </p>
+          <p className="text-[11px] text-ink-400">
+            {formatRelativeTime(inquiry.lastMessageAt)} · {inquiry.messageCount} message
+            {inquiry.messageCount === 1 ? '' : 's'}
+          </p>
+        </div>
+
+        <Badge tone={STATUS_TONE[inquiry.status]}>{inquiry.status}</Badge>
+      </Link>
+    </li>
+  );
+}
+
+/**
+ * Lightweight "x minutes ago" formatter so we don't pull in a date library
+ * just for the dashboard preview.
+ */
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '';
+  const diffSeconds = Math.round((Date.now() - then) / 1000);
+  if (diffSeconds < 60) return 'just now';
+  const diffMinutes = Math.round(diffSeconds / 60);
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.round(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return new Date(iso).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+  });
 }
 
 function ErrorBox({ msg }: { msg: string }) {
