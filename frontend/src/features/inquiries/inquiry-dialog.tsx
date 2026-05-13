@@ -13,6 +13,7 @@ import { createInquiry } from '@/features/inquiries/api';
 
 interface Props {
   productId: string;
+  productSlug: string;
   productName: string;
   productUnit: string;
   sellerId: string;
@@ -32,6 +33,7 @@ const DEFAULT_TRIGGER_CLASS =
 
 export function InquiryDialog({
   productId,
+  productSlug,
   productName,
   productUnit,
   sellerId,
@@ -105,7 +107,7 @@ export function InquiryDialog({
   if (!isAuthenticated) {
     return (
       <Link
-        href={`/login?next=${encodeURIComponent(`/product/${productId}`)}`}
+        href={`/login?next=${encodeURIComponent(`/product/${productSlug}`)}`}
         className={`${triggerClassName} block text-center`}
       >
         {triggerLabel}

@@ -145,6 +145,7 @@ export default async function ProductDetailPage({ params }: Props) {
             <div className="mt-4 space-y-2">
               <InquiryDialog
                 productId={product.id}
+                productSlug={product.slug}
                 productName={product.name}
                 productUnit={product.unit}
                 sellerId={product.seller.id}
@@ -154,6 +155,7 @@ export default async function ProductDetailPage({ params }: Props) {
               />
               <InquiryDialog
                 productId={product.id}
+                productSlug={product.slug}
                 productName={product.name}
                 productUnit={product.unit}
                 sellerId={product.seller.id}

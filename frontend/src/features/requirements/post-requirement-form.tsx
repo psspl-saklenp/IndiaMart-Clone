@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, type FormEvent } from 'react';
 
@@ -10,6 +11,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { listCategoryTree } from '@/features/categories/api';
 import { createRequirement } from '@/features/requirements/api';
+import { useAuth } from '@/hooks/use-auth';
 import type { Category } from '@/types/catalog';
 import type { CreateRequirementPayload } from '@/types/engagement';
 
@@ -29,9 +31,37 @@ function flatten(tree: Category[], depth = 0, out: FlatCategory[] = []): FlatCat
 export function PostRequirementForm() {
   const router = useRouter();
   const qc = useQueryClient();
+  const { isAuthenticated, status } = useAuth();
 
   const treeQ = useQuery({ queryKey: ['categories-tree'], queryFn: listCategoryTree });
   const flat = useMemo(() => flatten(treeQ.data ?? []), [treeQ.data]);
+
+  // Guest gate — show login prompt before rendering the form
+  if (status !== 'idle' && status !== 'loading' && !isAuthenticated) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-8 text-center">
+        <span className="text-4xl" aria-hidden>🔒</span>
+        <h2 className="mt-3 text-lg font-bold text-amber-900">Login required</h2>
+        <p className="mt-2 text-sm text-amber-700">
+          You need to be logged in to post a buy requirement. It&apos;s free and takes less than a minute.
+        </p>
+        <div className="mt-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <Link
+            href="/login?next=/requirements/new"
+            className="rounded-xl bg-brand-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-700"
+          >
+            Log in
+          </Link>
+          <Link
+            href="/register"
+            className="rounded-xl border border-brand-400 bg-white px-6 py-2.5 text-sm font-bold text-brand-700 hover:bg-brand-50"
+          >
+            Sign up free
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');

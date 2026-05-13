@@ -21,7 +21,7 @@ export function BuyerAppBar() {
     <header className="sticky top-0 z-30 w-full shadow-md" style={{ background: 'linear-gradient(135deg, #312e81 0%, #3730a3 60%, #1d8488 100%)' }}>
       <div className="mx-auto flex h-14 max-w-[96rem] items-center gap-4 px-4">
         {/* Wordmark */}
-        <Link href="/me/dashboard" className="flex items-center gap-2 shrink-0">
+        <Link href="/" className="flex items-center gap-2 shrink-0">
           <span
             aria-hidden
             className="flex size-8 items-center justify-center rounded-xl bg-white text-sm font-extrabold tracking-tight text-[var(--color-im-navy-800)] shadow-sm"
