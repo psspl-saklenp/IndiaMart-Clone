@@ -10,6 +10,7 @@ import { useSellAction } from '@/features/auth/use-sell-action';
 import { useInquiryCounts } from '@/features/inquiries/use-inquiry-counts';
 import { useAuth } from '@/hooks/use-auth';
 import { useLogout } from '@/hooks/use-logout';
+import { cn } from '@/lib/utils';
 import type { Role } from '@/types/api';
 
 export function Navbar() {
@@ -26,27 +27,27 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-30 border-b border-ink-200 bg-white shadow-sm">
       {/* Utility ribbon */}
-      <div className="hidden border-b border-ink-100 bg-ink-50 text-[11px] text-ink-500 sm:block">
+      <div className="hidden border-b border-ink-100 bg-gradient-to-r from-brand-700 to-brand-600 text-[11px] text-white/90 sm:block">
         <div className="mx-auto flex h-7 max-w-[96rem] items-center justify-end gap-4 px-4">
-          <Link href="/requirements/new" className="hover:text-ink-900">
-            Get best price
+          <Link href="/requirements/new" className="hover:text-white transition-colors">
+            🏷️ Get best price
           </Link>
-          <span className="text-ink-300">|</span>
+          <span className="text-white/30">|</span>
           <button
             type="button"
             onClick={onSellClick}
-            className="hover:text-ink-900"
+            className="hover:text-white transition-colors"
           >
-            Sell with us
+            🏪 Sell with us
           </button>
-          <span className="text-ink-300">|</span>
-          <a href="http://localhost:3001/api/docs" target="_blank" rel="noreferrer noopener" className="hover:text-ink-900">
-            API
+          <span className="text-white/30">|</span>
+          <a href="http://localhost:3001/api/docs" target="_blank" rel="noreferrer noopener" className="hover:text-white transition-colors">
+            API Docs
           </a>
           {!isAuthenticated && (
             <>
-              <span className="text-ink-300">|</span>
-              <Link href="/login" className="hover:text-ink-900">
+              <span className="text-white/30">|</span>
+              <Link href="/login" className="hover:text-white transition-colors font-medium">
                 Sign in
               </Link>
             </>
@@ -55,9 +56,15 @@ export function Navbar() {
       </div>
 
       {/* Main bar */}
-      <div className="mx-auto flex h-14 max-w-[96rem] items-center gap-3 px-4">
-        <Link href="/" className="text-lg font-bold tracking-tight text-ink-900">
-          indiamart-<span className="text-brand-600">clone</span>
+      <div className="mx-auto flex h-16 max-w-[96rem] items-center gap-3 px-4">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 shrink-0">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-700 text-sm font-extrabold text-white shadow-sm">
+            iC
+          </span>
+          <span className="hidden text-lg font-bold tracking-tight text-ink-900 sm:inline">
+            indiamart-<span className="text-brand-600">clone</span>
+          </span>
         </Link>
 
         <div className="hidden md:block">
@@ -65,203 +72,192 @@ export function Navbar() {
         </div>
 
         <div className="hidden flex-1 sm:block">
-          {/* Suspense boundary required because SearchBar reads useSearchParams,
-              which Next.js 15 enforces to be wrapped on prerender. */}
-          <Suspense fallback={<div className="h-9 rounded-md border border-ink-200 bg-ink-50" />}>
+          <Suspense fallback={<div className="h-10 rounded-xl border border-ink-200 bg-ink-50 animate-pulse" />}>
             <SearchBar />
           </Suspense>
         </div>
 
         <nav className="ml-auto flex items-center gap-2">
           {isLoading && !user ? (
-            <span className="text-xs text-ink-400">Checking session…</span>
+            <span className="h-8 w-20 rounded-lg bg-ink-100 animate-pulse" />
           ) : isAuthenticated && user ? (
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
-                className="relative flex items-center gap-2 rounded-md border border-ink-200 bg-white px-3 py-1.5 text-sm hover:bg-ink-50"
+                className={cn(
+                  'relative flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-all duration-150',
+                  menuOpen
+                    ? 'border-brand-300 bg-brand-50 shadow-sm'
+                    : 'border-ink-200 bg-white hover:border-ink-300 hover:bg-ink-50 hover:shadow-sm',
+                )}
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
-                <span className="relative inline-block">
-                  <span className="size-6 rounded-full bg-brand-100 text-center text-xs font-semibold leading-6 text-brand-700">
+                <span className="relative inline-flex">
+                  <span className="flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-xs font-bold text-white shadow-sm">
                     {user.name.charAt(0).toUpperCase()}
                   </span>
                   {totalCount > 0 && (
                     <span
                       aria-label={`${totalCount} unread inquiries`}
-                      className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[9px] font-semibold text-white"
+                      className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white"
                     >
                       {totalCount > 9 ? '9+' : totalCount}
                     </span>
                   )}
                 </span>
-                <span className="hidden text-ink-700 sm:inline">{user.name.split(' ')[0]}</span>
-                <span className="rounded bg-ink-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-ink-500">
+                <span className="hidden text-ink-700 font-medium sm:inline">{user.name.split(' ')[0]}</span>
+                <span className="rounded-md bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
                   {user.role}
                 </span>
+                <svg viewBox="0 0 16 16" className={cn('size-3.5 text-ink-400 transition-transform duration-150', menuOpen && 'rotate-180')} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+                  <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
 
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 mt-2 w-56 overflow-hidden rounded-md border border-ink-200 bg-white shadow-lg"
+                  className="absolute right-0 mt-2 w-60 overflow-hidden rounded-xl border border-ink-200 bg-white shadow-[var(--shadow-pop)] animate-fade-in"
                   onMouseLeave={() => setMenuOpen(false)}
                 >
-                  <div className="border-b border-ink-100 px-3 py-2 text-xs">
-                    <p className="font-medium text-ink-900">{user.name}</p>
-                    <p className="truncate text-ink-500">{user.email}</p>
+                  {/* User info header */}
+                  <div className="bg-gradient-to-br from-brand-50 to-ink-50 border-b border-ink-100 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <span className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white shadow-sm">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-ink-900">{user.name}</p>
+                        <p className="truncate text-xs text-ink-500">{user.email}</p>
+                      </div>
+                    </div>
                   </div>
 
-                  {user.role === 'admin' && (
-                    <>
-                      <Link
-                        href="/admin/dashboard"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-3 py-2 text-sm text-brand-700 hover:bg-brand-50"
-                      >
-                        Admin panel
-                      </Link>
-                      <div className="border-t border-ink-100" />
-                    </>
-                  )}
+                  <div className="py-1">
+                    {user.role === 'admin' && (
+                      <>
+                        <MenuLink href="/admin/dashboard" onClick={() => setMenuOpen(false)} icon="⚙️">
+                          Admin panel
+                        </MenuLink>
+                        <div className="my-1 border-t border-ink-100" />
+                      </>
+                    )}
 
-                  {(['buyer', 'admin'] as Role[]).includes(user.role) && (
-                    <>
-                      <Link
-                        href="/me/dashboard"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
-                      >
-                        My dashboard
-                      </Link>
-                      <Link
-                        href="/me/inquiries"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="flex items-center justify-between px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
-                      >
-                        <span>My inquiries</span>
-                        {buyerCount > 0 && (
-                          <span className="rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-medium text-white">
-                            {buyerCount}
-                          </span>
-                        )}
-                      </Link>
-                      <Link
-                        href="/me/requirements"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
-                      >
-                        My requirements
-                      </Link>
-                      <Link
-                        href="/requirements/new"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
-                      >
-                        + Post a requirement
-                      </Link>
-                      <div className="border-t border-ink-100" />
-                    </>
-                  )}
+                    {(['buyer', 'admin'] as Role[]).includes(user.role) && (
+                      <>
+                        <MenuLink href="/me/dashboard" onClick={() => setMenuOpen(false)} icon="🏠">
+                          My dashboard
+                        </MenuLink>
+                        <MenuLink href="/me/inquiries" onClick={() => setMenuOpen(false)} icon="💬" badge={buyerCount}>
+                          My inquiries
+                        </MenuLink>
+                        <MenuLink href="/me/requirements" onClick={() => setMenuOpen(false)} icon="📋">
+                          My requirements
+                        </MenuLink>
+                        <MenuLink href="/requirements/new" onClick={() => setMenuOpen(false)} icon="✨" highlight>
+                          Post a requirement
+                        </MenuLink>
+                        <div className="my-1 border-t border-ink-100" />
+                      </>
+                    )}
 
-                  {(['seller', 'admin'] as Role[]).includes(user.role) && (
-                    <>
-                      <Link
-                        href="/seller/dashboard"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
-                      >
-                        Dashboard
-                      </Link>
-                      <Link
-                        href="/seller/products"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
-                      >
-                        My products
-                      </Link>
-                      <Link
-                        href="/seller/products/new"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
-                      >
-                        + New product
-                      </Link>
-                      <Link
-                        href="/seller/inquiries"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="flex items-center justify-between px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
-                      >
-                        <span>Inquiries received</span>
-                        {sellerCount > 0 && (
-                          <span className="rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-medium text-white">
-                            {sellerCount}
-                          </span>
-                        )}
-                      </Link>
-                      <Link
-                        href="/seller/leads"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
-                      >
-                        Buy leads
-                      </Link>
-                      {/* Sellers also have business details captured at
-                          signup; "My profile" routes them to the unified
-                          buyer profile page so they edit those in the same
-                          UI as buyers. */}
-                      <Link
-                        href="/me/profile"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
-                      >
-                        My profile
-                      </Link>
-                      <div className="border-t border-ink-100" />
-                    </>
-                  )}
+                    {(['seller', 'admin'] as Role[]).includes(user.role) && (
+                      <>
+                        <MenuLink href="/seller/dashboard" onClick={() => setMenuOpen(false)} icon="📊">
+                          Seller dashboard
+                        </MenuLink>
+                        <MenuLink href="/seller/products" onClick={() => setMenuOpen(false)} icon="📦">
+                          My products
+                        </MenuLink>
+                        <MenuLink href="/seller/inquiries" onClick={() => setMenuOpen(false)} icon="📩" badge={sellerCount}>
+                          Inquiries received
+                        </MenuLink>
+                        <MenuLink href="/seller/leads" onClick={() => setMenuOpen(false)} icon="🎯">
+                          Buy leads
+                        </MenuLink>
+                        <MenuLink href="/me/profile" onClick={() => setMenuOpen(false)} icon="👤">
+                          My profile
+                        </MenuLink>
+                        <div className="my-1 border-t border-ink-100" />
+                      </>
+                    )}
 
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      void handleLogout();
-                    }}
-                    className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                  >
-                    Log out
-                  </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        void handleLogout();
+                      }}
+                      className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <span aria-hidden>🚪</span>
+                      Log out
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           ) : (
-            <>
+            <div className="flex items-center gap-2">
               <Link href="/login">
                 <Button variant="ghost" size="sm">
                   Log in
                 </Button>
               </Link>
               <Link href="/register">
-                <Button size="sm">Sign up</Button>
+                <Button size="sm" className="shadow-sm">
+                  Sign up free
+                </Button>
               </Link>
-            </>
+            </div>
           )}
         </nav>
       </div>
     </header>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*                         Menu link helper                            */
+/* ------------------------------------------------------------------ */
+
+function MenuLink({
+  href,
+  onClick,
+  icon,
+  badge,
+  highlight,
+  children,
+}: {
+  href: string;
+  onClick: () => void;
+  icon?: string;
+  badge?: number;
+  highlight?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      role="menuitem"
+      onClick={onClick}
+      className={cn(
+        'flex items-center gap-2.5 px-4 py-2 text-sm transition-colors',
+        highlight
+          ? 'font-semibold text-brand-700 hover:bg-brand-50'
+          : 'text-ink-700 hover:bg-ink-50',
+      )}
+    >
+      {icon && <span aria-hidden className="text-base leading-none">{icon}</span>}
+      <span className="flex-1">{children}</span>
+      {badge != null && badge > 0 && (
+        <span className="flex size-5 items-center justify-center rounded-full bg-brand-600 text-[10px] font-bold text-white">
+          {badge > 9 ? '9+' : badge}
+        </span>
+      )}
+    </Link>
   );
 }

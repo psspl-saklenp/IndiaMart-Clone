@@ -10,14 +10,9 @@ interface SidebarItem {
   label: string;
   href: string;
   icon: React.ReactNode;
-  /** Optional small badge (e.g. profile completion %). */
   badge?: { text: string; tone: 'amber' | 'teal' | 'rose' };
 }
 
-/**
- * Left rail used inside the buyer area only. Hidden below `lg:` for v1; the
- * dashboard content stacks on smaller screens.
- */
 export function BuyerSidebar() {
   const { user } = useAuth();
   const pathname = usePathname();
@@ -35,21 +30,21 @@ export function BuyerSidebar() {
   ];
 
   return (
-    <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 -mt-6 flex-col self-start overflow-y-auto rounded-b-md border-x border-b border-ink-200 bg-white shadow-sm lg:flex">
+    <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 -mt-6 flex-col self-start overflow-y-auto rounded-xl border border-ink-200 bg-white shadow-sm lg:flex">
       {/* Profile header */}
-      <div className="border-b border-ink-200 p-4">
+      <div className="bg-gradient-to-br from-[var(--color-im-navy-800)] to-[var(--color-im-navy-900)] p-4 rounded-t-xl">
         <div className="flex items-center gap-3">
-          <span className="flex size-12 items-center justify-center rounded-full bg-[var(--color-im-navy-700)] text-base font-semibold text-white">
+          <span className="flex size-12 items-center justify-center rounded-full bg-white/20 text-base font-bold text-white ring-2 ring-white/30 shadow-sm">
             {initial}
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-ink-900">{displayName}</p>
-            <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-500">
+            <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-white/60">
               <IconPin className="size-3" />
               <span>Add city</span>
               <button
                 type="button"
-                className="ml-1 text-[var(--color-im-teal-700)] hover:underline"
+                className="ml-1 text-yellow-300 hover:text-yellow-200 transition-colors"
                 aria-label="Edit your city"
               >
                 <IconPencil className="size-3" />
@@ -57,11 +52,22 @@ export function BuyerSidebar() {
             </p>
           </div>
         </div>
+        {/* Quick stats */}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-lg bg-white/10 px-2 py-1.5 text-center">
+            <p className="text-xs font-bold text-white">0</p>
+            <p className="text-[10px] text-white/60">Inquiries</p>
+          </div>
+          <div className="rounded-lg bg-white/10 px-2 py-1.5 text-center">
+            <p className="text-xs font-bold text-white">0</p>
+            <p className="text-[10px] text-white/60">Requirements</p>
+          </div>
+        </div>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 py-2">
-        <ul className="space-y-0.5">
+        <ul className="space-y-0.5 px-2">
           {items.map((item) => {
             const active =
               pathname === item.href ||
@@ -71,27 +77,32 @@ export function BuyerSidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    'group flex items-center gap-3 px-4 py-2 text-sm transition-colors',
+                    'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-150',
                     active
-                      ? 'border-l-4 border-[var(--color-im-navy-700)] bg-[var(--color-im-navy-50)] pl-3 font-semibold text-[var(--color-im-navy-800)]'
-                      : 'border-l-4 border-transparent text-ink-700 hover:bg-ink-50',
+                      ? 'bg-[var(--color-im-navy-50)] font-semibold text-[var(--color-im-navy-800)] shadow-sm'
+                      : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900',
                   )}
                 >
                   <span
                     aria-hidden
                     className={cn(
-                      'shrink-0',
-                      active ? 'text-[var(--color-im-navy-700)]' : 'text-ink-500 group-hover:text-ink-700',
+                      'shrink-0 transition-colors',
+                      active
+                        ? 'text-[var(--color-im-navy-700)]'
+                        : 'text-ink-400 group-hover:text-ink-600',
                     )}
                   >
                     {item.icon}
                   </span>
                   <span className="flex-1 truncate">{item.label}</span>
+                  {active && (
+                    <span className="size-1.5 rounded-full bg-[var(--color-im-navy-600)]" aria-hidden />
+                  )}
                   {item.badge && (
                     <span
                       className={cn(
                         'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                        item.badge.tone === 'amber' && 'bg-yellow-100 text-yellow-700',
+                        item.badge.tone === 'amber' && 'bg-amber-100 text-amber-700',
                         item.badge.tone === 'teal' && 'bg-[var(--color-im-teal-100)] text-[var(--color-im-teal-700)]',
                         item.badge.tone === 'rose' && 'bg-rose-100 text-rose-700',
                       )}
@@ -106,12 +117,13 @@ export function BuyerSidebar() {
         </ul>
       </nav>
 
-      <div className="border-t border-ink-200 px-4 py-3">
+      {/* Help footer */}
+      <div className="border-t border-ink-100 px-4 py-3">
         <Link
           href="#"
-          className="flex items-center gap-2 text-xs font-medium text-ink-500 hover:text-ink-800"
+          className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium text-ink-500 hover:bg-ink-50 hover:text-ink-800 transition-colors"
         >
-          <IconHelpCircle className="size-4" />
+          <IconHelpCircle className="size-4 text-ink-400" />
           Help and support
         </Link>
       </div>
@@ -119,9 +131,9 @@ export function BuyerSidebar() {
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/*                            Inline SVG icons                              */
-/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/*                          Inline SVG icons                           */
+/* ------------------------------------------------------------------ */
 
 const ICON_BASE = 'size-5';
 
@@ -139,12 +151,7 @@ function svgProps(extraClass?: string) {
 }
 
 function IconHome() {
-  return (
-    <svg {...svgProps()}>
-      <path d="M3 11l9-7 9 7" />
-      <path d="M5 10v10h14V10" />
-    </svg>
-  );
+  return <svg {...svgProps()}><path d="M3 11l9-7 9 7" /><path d="M5 10v10h14V10" /></svg>;
 }
 
 function IconIdCard() {
@@ -159,12 +166,7 @@ function IconIdCard() {
 }
 
 function IconMail() {
-  return (
-    <svg {...svgProps()}>
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M3 7l9 6 9-6" />
-    </svg>
-  );
+  return <svg {...svgProps()}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></svg>;
 }
 
 function IconSearchUser() {

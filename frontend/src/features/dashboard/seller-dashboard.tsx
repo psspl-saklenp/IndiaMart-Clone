@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { getStats, getTopProducts } from '@/features/dashboard/api';
 import { listInquiries } from '@/features/inquiries/api';
+import { cn } from '@/lib/utils';
 import type { DashboardTopProduct } from '@/types/dashboard';
 import type { InquirySummary } from '@/types/inquiries';
 
@@ -34,29 +35,61 @@ export function SellerDashboard() {
   const deltaPct = prev30 > 0 ? Math.round((delta / prev30) * 100) : null;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-ink-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-ink-500">
-          A snapshot of your catalog activity. Numbers refresh on every load.
-        </p>
+    <div className="space-y-6">
+      {/* Page header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-ink-900">Seller Dashboard</h1>
+          <p className="mt-1 text-sm text-ink-500">
+            A snapshot of your catalog activity. Numbers refresh on every load.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link
+            href="/seller/products/new"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:shadow-md hover:from-brand-700 hover:to-brand-800 transition-all duration-150"
+          >
+            <span aria-hidden>+</span>
+            Add product
+          </Link>
+          <Link
+            href="/seller/inquiries"
+            className="inline-flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-4 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50 hover:border-ink-300 transition-all duration-150"
+          >
+            View inquiries
+          </Link>
+        </div>
       </div>
 
       {statsQ.isError && (
-        <ErrorBox msg={(statsQ.error as Error)?.message ?? 'Failed to load stats'} />
+        <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span aria-hidden>⚠️</span>
+          {(statsQ.error as Error)?.message ?? 'Failed to load stats'}
+        </div>
       )}
 
+      {/* KPI cards */}
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <KpiCard label="Active products" value={stats?.activeProducts} hint={stats ? `${stats.totalProducts} total` : ''} />
+        <KpiCard
+          label="Active products"
+          value={stats?.activeProducts}
+          hint={stats ? `${stats.totalProducts} total` : ''}
+          icon="📦"
+          tone="brand"
+        />
         <KpiCard
           label="Lifetime views"
           value={stats?.totalViews}
           hint={stats?.conversionRate != null ? `${(stats.conversionRate * 100).toFixed(1)}% conversion` : ''}
+          icon="👁️"
+          tone="info"
         />
         <KpiCard
           label="Lifetime inquiries"
           value={stats?.totalInquiries}
           hint={stats ? `${stats.openInquiries} open · ${stats.respondedInquiries} responded` : ''}
+          icon="💬"
+          tone="success"
         />
         <KpiCard
           label="Inquiries (30d)"
@@ -69,41 +102,67 @@ export function SellerDashboard() {
               : `${deltaPct >= 0 ? '+' : ''}${deltaPct}% vs prior 30d`
           }
           deltaTone={delta >= 0 ? 'success' : 'danger'}
+          icon="📈"
+          tone={delta >= 0 ? 'success' : 'danger'}
         />
       </section>
 
-      <section className="rounded-lg border border-ink-200 bg-white p-5">
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-base font-semibold text-ink-900">Recent inquiries</h2>
+      {/* Recent inquiries */}
+      <section className="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-ink-100 bg-gradient-to-r from-ink-50 to-white px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-brand-100 text-sm" aria-hidden>💬</span>
+            <h2 className="text-sm font-bold text-ink-900">Recent inquiries</h2>
+          </div>
           <Link
             href="/seller/inquiries"
-            className="text-xs font-medium text-brand-700 hover:underline"
+            className="text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors"
           >
             View all →
           </Link>
         </div>
 
-        {recentQ.isLoading && <p className="text-sm text-ink-500">Loading…</p>}
+        <div className="p-5">
+          {recentQ.isLoading && (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="size-10 rounded-xl skeleton" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-3/4 rounded skeleton" />
+                    <div className="h-2.5 w-1/2 rounded skeleton" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-        {!recentQ.isLoading && recent.length === 0 && (
-          <p className="rounded-md border border-dashed border-ink-200 bg-white px-4 py-8 text-center text-sm text-ink-500">
-            No inquiries yet. Once buyers reach out, the latest ones will appear here.
-          </p>
-        )}
+          {!recentQ.isLoading && recent.length === 0 && (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-ink-200 bg-ink-50 px-4 py-10 text-center">
+              <span className="text-3xl" aria-hidden>📭</span>
+              <p className="mt-2 text-sm font-medium text-ink-700">No inquiries yet</p>
+              <p className="mt-1 text-xs text-ink-500">Once buyers reach out, the latest ones will appear here.</p>
+            </div>
+          )}
 
-        {recent.length > 0 && (
-          <ul className="divide-y divide-ink-200 overflow-hidden rounded-md border border-ink-200">
-            {recent.map((inquiry) => (
-              <RecentInquiryRow key={inquiry.id} inquiry={inquiry} />
-            ))}
-          </ul>
-        )}
+          {recent.length > 0 && (
+            <ul className="divide-y divide-ink-100">
+              {recent.map((inquiry) => (
+                <RecentInquiryRow key={inquiry.id} inquiry={inquiry} />
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
 
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-base font-semibold text-ink-900">Top products</h2>
-          <div className="flex gap-1 rounded-md border border-ink-200 bg-ink-50 p-1 text-xs">
+      {/* Top products */}
+      <section className="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ink-100 bg-gradient-to-r from-ink-50 to-white px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-brand-100 text-sm" aria-hidden>🏆</span>
+            <h2 className="text-sm font-bold text-ink-900">Top products</h2>
+          </div>
+          <div className="flex gap-1 rounded-xl border border-ink-200 bg-white p-1 text-xs shadow-sm">
             <TabButton active={topBy === 'views'} onClick={() => setTopBy('views')}>
               By views
             </TabButton>
@@ -113,57 +172,105 @@ export function SellerDashboard() {
           </div>
         </div>
 
-        {topQ.isLoading && <p className="text-sm text-ink-500">Loading…</p>}
-        {top && top.length === 0 && (
-          <p className="rounded-md border border-dashed border-ink-200 bg-white px-4 py-8 text-center text-sm text-ink-500">
-            No products yet. List one to see it here.
-          </p>
-        )}
-        {top && top.length > 0 && (
-          <ul className="divide-y divide-ink-200 overflow-hidden rounded-lg border border-ink-200 bg-white">
-            {top.map((product, i) => (
-              <TopProductRow key={product.id} product={product} rank={i + 1} highlight={topBy} />
-            ))}
-          </ul>
-        )}
+        <div className="p-5">
+          {topQ.isLoading && (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="size-6 rounded-full skeleton" />
+                  <div className="size-12 rounded-xl skeleton" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-2/3 rounded skeleton" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {top && top.length === 0 && (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-ink-200 bg-ink-50 px-4 py-10 text-center">
+              <span className="text-3xl" aria-hidden>📦</span>
+              <p className="mt-2 text-sm font-medium text-ink-700">No products yet</p>
+              <p className="mt-1 text-xs text-ink-500">List a product to see it here.</p>
+              <Link
+                href="/seller/products/new"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700 transition-colors"
+              >
+                + Add product
+              </Link>
+            </div>
+          )}
+          {top && top.length > 0 && (
+            <ul className="divide-y divide-ink-100">
+              {top.map((product, i) => (
+                <TopProductRow key={product.id} product={product} rank={i + 1} highlight={topBy} />
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*                           KPI Card                                  */
+/* ------------------------------------------------------------------ */
+
+const KPI_TONE_STYLES = {
+  brand: 'from-brand-50 to-white border-brand-100',
+  info: 'from-sky-50 to-white border-sky-100',
+  success: 'from-emerald-50 to-white border-emerald-100',
+  danger: 'from-red-50 to-white border-red-100',
+  neutral: 'from-ink-50 to-white border-ink-200',
+};
 
 function KpiCard({
   label,
   value,
   hint,
   deltaTone,
+  icon,
+  tone = 'neutral',
 }: {
   label: string;
   value: number | undefined;
   hint?: string;
   deltaTone?: 'success' | 'danger';
+  icon?: string;
+  tone?: keyof typeof KPI_TONE_STYLES;
 }) {
   return (
-    <div className="rounded-lg border border-ink-200 bg-white p-4">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-ink-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-ink-900">
-        {value === undefined ? '—' : value.toLocaleString('en-IN')}
+    <div className={cn('rounded-xl border bg-gradient-to-br p-4 shadow-sm', KPI_TONE_STYLES[tone])}>
+      <div className="flex items-start justify-between">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-ink-500">{label}</p>
+        {icon && <span className="text-lg" aria-hidden>{icon}</span>}
+      </div>
+      <p className="mt-2 text-3xl font-bold text-ink-900">
+        {value === undefined ? (
+          <span className="inline-block h-8 w-16 rounded-lg skeleton" />
+        ) : (
+          value.toLocaleString('en-IN')
+        )}
       </p>
       {hint && (
         <p
-          className={`mt-1 text-xs ${
-            deltaTone === 'danger'
-              ? 'text-red-600'
-              : deltaTone === 'success'
-                ? 'text-emerald-600'
-                : 'text-ink-500'
-          }`}
+          className={cn(
+            'mt-1.5 text-xs font-medium',
+            deltaTone === 'danger' ? 'text-red-600' : deltaTone === 'success' ? 'text-emerald-600' : 'text-ink-500',
+          )}
         >
+          {deltaTone === 'success' && '↑ '}
+          {deltaTone === 'danger' && '↓ '}
           {hint}
         </p>
       )}
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*                           Tab Button                                */
+/* ------------------------------------------------------------------ */
 
 function TabButton({
   active,
@@ -178,14 +285,21 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded px-3 py-1 transition-colors ${
-        active ? 'bg-white text-brand-700 shadow-sm' : 'text-ink-600 hover:text-ink-800'
-      }`}
+      className={cn(
+        'rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150',
+        active
+          ? 'bg-brand-600 text-white shadow-sm'
+          : 'text-ink-600 hover:text-ink-900 hover:bg-ink-50',
+      )}
     >
       {children}
     </button>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*                        Top Product Row                              */
+/* ------------------------------------------------------------------ */
 
 function TopProductRow({
   product,
@@ -200,12 +314,18 @@ function TopProductRow({
     <li>
       <Link
         href={`/product/${product.slug}`}
-        className="flex items-center gap-4 px-4 py-3 hover:bg-ink-50"
+        className="flex items-center gap-4 rounded-xl px-3 py-3 transition-all duration-150 hover:bg-ink-50"
       >
-        <span className="size-6 flex-shrink-0 rounded-full bg-ink-100 text-center text-xs font-semibold leading-6 text-ink-700">
+        <span className={cn(
+          'flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+          rank === 1 ? 'bg-yellow-100 text-yellow-700' :
+          rank === 2 ? 'bg-ink-100 text-ink-600' :
+          rank === 3 ? 'bg-orange-100 text-orange-700' :
+          'bg-ink-100 text-ink-500',
+        )}>
           {rank}
         </span>
-        <div className="size-12 flex-shrink-0 overflow-hidden rounded-md bg-ink-100">
+        <div className="size-12 shrink-0 overflow-hidden rounded-xl bg-ink-100 shadow-sm">
           {product.primaryImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -213,14 +333,22 @@ function TopProductRow({
               alt={product.name}
               className="h-full w-full object-cover"
             />
-          ) : null}
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-ink-300">
+              <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth={1} aria-hidden>
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="M21 15l-5-5L5 21" />
+              </svg>
+            </div>
+          )}
         </div>
-        <p className="min-w-0 flex-1 truncate text-sm font-medium text-ink-900">{product.name}</p>
+        <p className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-900">{product.name}</p>
         <div className="flex shrink-0 items-center gap-2 text-xs">
-          <Badge tone={highlight === 'views' ? 'brand' : 'neutral'}>
+          <Badge tone={highlight === 'views' ? 'brand' : 'neutral'} dot>
             {product.viewCount.toLocaleString('en-IN')} views
           </Badge>
-          <Badge tone={highlight === 'inquiries' ? 'brand' : 'neutral'}>
+          <Badge tone={highlight === 'inquiries' ? 'brand' : 'neutral'} dot>
             {product.inquiryCount.toLocaleString('en-IN')} inquiries
           </Badge>
         </div>
@@ -228,6 +356,10 @@ function TopProductRow({
     </li>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*                       Recent Inquiry Row                            */
+/* ------------------------------------------------------------------ */
 
 const STATUS_TONE = {
   new: 'info',
@@ -240,9 +372,9 @@ function RecentInquiryRow({ inquiry }: { inquiry: InquirySummary }) {
     <li>
       <Link
         href={`/seller/inquiries/${inquiry.id}`}
-        className="flex items-center gap-3 px-4 py-3 hover:bg-ink-50"
+        className="flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-150 hover:bg-ink-50"
       >
-        <div className="size-10 flex-shrink-0 overflow-hidden rounded-md bg-ink-100">
+        <div className="size-11 shrink-0 overflow-hidden rounded-xl bg-ink-100 shadow-sm">
           {inquiry.product?.primaryImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -251,8 +383,12 @@ function RecentInquiryRow({ inquiry }: { inquiry: InquirySummary }) {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-[10px] text-ink-400">
-              no img
+            <div className="flex h-full w-full items-center justify-center text-ink-300">
+              <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1} aria-hidden>
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="M21 15l-5-5L5 21" />
+              </svg>
             </div>
           )}
         </div>
@@ -261,14 +397,11 @@ function RecentInquiryRow({ inquiry }: { inquiry: InquirySummary }) {
           <div className="flex items-center gap-2">
             <p className="truncate text-sm font-semibold text-ink-900">{inquiry.subject}</p>
             {inquiry.unreadForViewer && (
-              <span
-                className="size-2 flex-shrink-0 rounded-full bg-brand-500"
-                aria-label="unread"
-              />
+              <span className="size-2 shrink-0 rounded-full bg-brand-500 ring-2 ring-brand-100" aria-label="unread" />
             )}
           </div>
           <p className="truncate text-xs text-ink-500">
-            From: {inquiry.buyer.name}
+            From: <span className="font-medium text-ink-700">{inquiry.buyer.name}</span>
             {inquiry.product && <> · {inquiry.product.name}</>}
           </p>
           <p className="text-[11px] text-ink-400">
@@ -277,16 +410,12 @@ function RecentInquiryRow({ inquiry }: { inquiry: InquirySummary }) {
           </p>
         </div>
 
-        <Badge tone={STATUS_TONE[inquiry.status]}>{inquiry.status}</Badge>
+        <Badge tone={STATUS_TONE[inquiry.status]} dot>{inquiry.status}</Badge>
       </Link>
     </li>
   );
 }
 
-/**
- * Lightweight "x minutes ago" formatter so we don't pull in a date library
- * just for the dashboard preview.
- */
 function formatRelativeTime(iso: string): string {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return '';
@@ -298,16 +427,5 @@ function formatRelativeTime(iso: string): string {
   if (diffHours < 24) return `${diffHours}h ago`;
   const diffDays = Math.round(diffHours / 24);
   if (diffDays < 7) return `${diffDays}d ago`;
-  return new Date(iso).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
-
-function ErrorBox({ msg }: { msg: string }) {
-  return (
-    <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-      {msg}
-    </div>
-  );
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }

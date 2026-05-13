@@ -22,13 +22,10 @@ import {
 } from './dashboard-data';
 
 interface BuyerDashboardProps {
-  /** Server-fetched categories shown in the "Categories You May Like" strip. */
   categories: Category[];
 }
 
 export function BuyerDashboard({ categories }: BuyerDashboardProps) {
-  // All buyer-specific data is fetched client-side so the bearer token
-  // (held in module memory by the axios client) is attached automatically.
   const [reqQ, inqQ, countsQ] = useQueries({
     queries: [
       { queryKey: ['my-requirements'], queryFn: listMyRequirements },
@@ -48,11 +45,11 @@ export function BuyerDashboard({ categories }: BuyerDashboardProps) {
     inquiry: totalInquiries,
     lead: requirements.length,
     reply: buyerReplies,
-    call: 0, // No call-tracking API yet.
+    call: 0,
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <DashboardSearch />
       <MyOrdersCard hasRequirements={requirements.length > 0} />
       <CategoriesYouMayLike categories={categories} />
@@ -64,35 +61,45 @@ export function BuyerDashboard({ categories }: BuyerDashboardProps) {
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/*                              My Orders                                   */
-/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/*                           My Orders                                 */
+/* ------------------------------------------------------------------ */
 
 function MyOrdersCard({ hasRequirements }: { hasRequirements: boolean }) {
   return (
-    <section className="rounded-md border border-ink-200 bg-white shadow-sm">
-      <header className="border-b border-ink-200 px-4 py-3">
-        <h2 className="text-sm font-semibold text-ink-900">My Orders</h2>
+    <section className="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm">
+      <header className="flex items-center justify-between border-b border-ink-100 bg-gradient-to-r from-ink-50 to-white px-5 py-3.5">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 items-center justify-center rounded-lg bg-brand-100 text-sm" aria-hidden>📦</span>
+          <h2 className="text-sm font-bold text-ink-900">My Orders</h2>
+        </div>
+        {hasRequirements && (
+          <Link href="/me/requirements" className="text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors">
+            View all →
+          </Link>
+        )}
       </header>
-      <div className="px-4 py-10">
+      <div className="px-5 py-10">
         {hasRequirements ? (
-          <div className="text-center text-sm text-ink-500">
+          <div className="text-center">
+            <p className="text-sm text-ink-500">You have active requirements.</p>
             <Link
               href="/me/requirements"
-              className="font-medium text-[var(--color-im-teal-700)] hover:underline"
+              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-all duration-150"
             >
-              View all your requirements &rarr;
+              View all requirements →
             </Link>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center text-center">
-            <PackageIllustration />
-            <p className="mt-3 text-sm text-ink-500">
-              No requirements posted yet. Post one to receive quotations.
-            </p>
+            <div className="flex size-20 items-center justify-center rounded-2xl bg-ink-100">
+              <PackageIllustration />
+            </div>
+            <p className="mt-4 text-sm font-medium text-ink-700">No requirements posted yet</p>
+            <p className="mt-1 text-xs text-ink-500">Post a requirement to receive quotations from verified suppliers.</p>
             <Link
               href="/requirements/new"
-              className="mt-4 inline-flex items-center gap-2 rounded-md bg-[var(--color-im-teal-600)] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-im-teal-700)]"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:shadow-lg hover:from-brand-700 hover:to-brand-800 transition-all duration-150"
             >
               <PlusIcon />
               Post a Requirement
@@ -104,26 +111,26 @@ function MyOrdersCard({ hasRequirements }: { hasRequirements: boolean }) {
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/*                       Categories You May Like                            */
-/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/*                    Categories You May Like                          */
+/* ------------------------------------------------------------------ */
 
 function CategoriesYouMayLike({ categories }: { categories: Category[] }) {
   const display = categories.slice(0, 4);
   if (display.length === 0) return null;
   return (
-    <SectionCard title="Categories You May Like">
+    <SectionCard title="Categories You May Like" icon="🗂️">
       <ul className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {display.map((cat) => (
           <li key={cat.id}>
-            <div className="flex h-full flex-col rounded-md border border-ink-200 bg-white p-3 text-center transition-shadow hover:shadow-[var(--shadow-card-hover)]">
-              <div className="flex flex-1 items-center justify-center rounded bg-ink-50 py-6 text-4xl">
+            <div className="group flex h-full flex-col rounded-xl border border-ink-200 bg-white p-4 text-center transition-all duration-200 hover:border-brand-200 hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5">
+              <div className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-br from-ink-50 to-brand-50 py-6 text-4xl transition-transform duration-200 group-hover:scale-110">
                 <span aria-hidden>{getCategoryIcon(cat.slug)}</span>
               </div>
-              <p className="mt-3 line-clamp-2 text-sm font-medium text-ink-900">{cat.name}</p>
+              <p className="mt-3 line-clamp-2 text-sm font-semibold text-ink-900">{cat.name}</p>
               <Link
                 href={`/category/${cat.slug}`}
-                className="mt-3 inline-flex justify-center rounded-md bg-[var(--color-im-teal-600)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--color-im-teal-700)]"
+                className="mt-3 inline-flex justify-center rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-3 py-2 text-xs font-semibold text-white hover:from-brand-700 hover:to-brand-800 transition-all duration-150 shadow-sm"
               >
                 Get Quotes
               </Link>
@@ -135,9 +142,9 @@ function CategoriesYouMayLike({ categories }: { categories: Category[] }) {
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/*                            Your Activity                                 */
-/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/*                         Your Activity                               */
+/* ------------------------------------------------------------------ */
 
 function YourActivity({
   tiles,
@@ -147,19 +154,19 @@ function YourActivity({
   values: Record<ActivityTileMeta['icon'], number>;
 }) {
   return (
-    <SectionCard title="Your Activity">
+    <SectionCard title="Your Activity" icon="📊">
       <ul className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {tiles.map((tile) => (
           <li key={tile.icon}>
             <div
               className={cn(
-                'flex items-center gap-3 rounded-md border border-ink-200 p-4',
+                'flex items-center gap-3 rounded-xl border p-4 transition-all duration-150 hover:shadow-sm',
                 TILE_TONE_CLASS[tile.tone].bg,
               )}
             >
               <span
                 className={cn(
-                  'flex size-10 shrink-0 items-center justify-center rounded-md bg-white',
+                  'flex size-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm',
                   TILE_TONE_CLASS[tile.tone].iconFg,
                 )}
                 aria-hidden
@@ -170,7 +177,7 @@ function YourActivity({
                 <p className="text-2xl font-bold text-ink-900">
                   {values[tile.icon].toLocaleString('en-IN')}
                 </p>
-                <p className="truncate text-xs text-ink-600">{tile.label}</p>
+                <p className="truncate text-xs font-medium text-ink-600">{tile.label}</p>
               </div>
             </div>
           </li>
@@ -193,53 +200,30 @@ function ActivityIcon({ name }: { name: ActivityTileMeta['icon'] }) {
   };
   switch (name) {
     case 'inquiry':
-      return (
-        <svg {...props}>
-          <rect x="4" y="5" width="16" height="14" rx="2" />
-          <path d="M8 9h8M8 13h6" />
-        </svg>
-      );
+      return <svg {...props}><rect x="4" y="5" width="16" height="14" rx="2" /><path d="M8 9h8M8 13h6" /></svg>;
     case 'lead':
-      return (
-        <svg {...props}>
-          <path d="M3 17l5-5 4 4 8-8" />
-          <path d="M14 8h6v6" />
-        </svg>
-      );
+      return <svg {...props}><path d="M3 17l5-5 4 4 8-8" /><path d="M14 8h6v6" /></svg>;
     case 'reply':
-      return (
-        <svg {...props}>
-          <path d="M21 12a8 8 0 0 1-12 6.9L3 21l2.1-5.7A8 8 0 1 1 21 12z" />
-        </svg>
-      );
+      return <svg {...props}><path d="M21 12a8 8 0 0 1-12 6.9L3 21l2.1-5.7A8 8 0 1 1 21 12z" /></svg>;
     case 'call':
-      return (
-        <svg {...props}>
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.18 4.18 2 2 0 0 1 4.16 2h3a2 2 0 0 1 2 1.72c.13.96.34 1.9.63 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.29 1.85.5 2.81.63A2 2 0 0 1 22 16.92z" />
-        </svg>
-      );
+      return <svg {...props}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.18 4.18 2 2 0 0 1 4.16 2h3a2 2 0 0 1 2 1.72c.13.96.34 1.9.63 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.29 1.85.5 2.81.63A2 2 0 0 1 22 16.92z" /></svg>;
   }
 }
 
-/* ------------------------------------------------------------------------ */
-/*                            Top Brands strip                              */
-/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/*                         Top Brands strip                            */
+/* ------------------------------------------------------------------ */
 
 function TopBrandsStrip() {
   return (
-    <SectionCard title="Top Brands on the Marketplace">
-      <ul className="grid grid-cols-2 items-center gap-4 sm:grid-cols-3 lg:grid-cols-5">
+    <SectionCard title="Top Brands on the Marketplace" icon="🏆">
+      <ul className="grid grid-cols-2 items-center gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {PLACEHOLDER_BRANDS.map((brand) => (
           <li
             key={brand.name}
-            className="flex h-20 flex-col items-center justify-center rounded-md border border-ink-100 bg-ink-50/50 px-3 text-center"
+            className="flex h-20 flex-col items-center justify-center rounded-xl border border-ink-100 bg-gradient-to-br from-ink-50 to-white px-3 text-center transition-all duration-150 hover:border-ink-200 hover:shadow-sm"
           >
-            <span
-              className={cn(
-                'text-base font-extrabold tracking-tight',
-                brand.colorClass,
-              )}
-            >
+            <span className={cn('text-base font-extrabold tracking-tight', brand.colorClass)}>
               {brand.name}
             </span>
             <span className="mt-1 text-[10px] uppercase tracking-wide text-ink-500">
@@ -255,13 +239,13 @@ function TopBrandsStrip() {
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/*                              More For You                                */
-/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/*                           More For You                              */
+/* ------------------------------------------------------------------ */
 
 function MoreForYou() {
   return (
-    <SectionCard title="More For You">
+    <SectionCard title="More For You" icon="✨">
       <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {PROMO_TILES.map((tile) => (
           <li key={tile.title}>
@@ -277,18 +261,18 @@ function PromoCard({ tile }: { tile: PromoTile }) {
   return (
     <div
       className={cn(
-        'flex h-full flex-col rounded-md border border-ink-200 p-4',
+        'group flex h-full flex-col rounded-xl border p-4 transition-all duration-150 hover:shadow-sm',
         tile.toneClass,
       )}
     >
-      <span className="flex size-10 items-center justify-center rounded-md bg-white shadow-sm" aria-hidden>
+      <span className="flex size-11 items-center justify-center rounded-xl bg-white shadow-sm transition-transform duration-150 group-hover:scale-110" aria-hidden>
         <PromoIcon name={tile.icon} />
       </span>
-      <p className="mt-3 text-sm font-semibold text-ink-900">{tile.title}</p>
-      <p className="mt-1 flex-1 text-xs text-ink-600">{tile.description}</p>
+      <p className="mt-3 text-sm font-bold text-ink-900">{tile.title}</p>
+      <p className="mt-1 flex-1 text-xs leading-relaxed text-ink-600">{tile.description}</p>
       <Link
         href={tile.ctaHref}
-        className="mt-3 inline-flex w-full justify-center rounded-md bg-[var(--color-im-teal-600)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--color-im-teal-700)]"
+        className="mt-4 inline-flex w-full justify-center rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-3 py-2 text-xs font-semibold text-white hover:from-brand-700 hover:to-brand-800 transition-all duration-150 shadow-sm"
       >
         {tile.ctaLabel}
       </Link>
@@ -309,45 +293,23 @@ function PromoIcon({ name }: { name: PromoTile['icon'] }) {
   };
   switch (name) {
     case 'verified':
-      return (
-        <svg {...props}>
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 21a8 8 0 0 1 16 0" />
-          <path d="M16 6l1.5 1.5L20 5" />
-        </svg>
-      );
+      return <svg {...props}><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /><path d="M16 6l1.5 1.5L20 5" /></svg>;
     case 'sell':
-      return (
-        <svg {...props}>
-          <path d="M3 9l1.5-4.5h15L21 9" />
-          <path d="M4 9v11h16V9" />
-          <path d="M9 20v-6h6v6" />
-        </svg>
-      );
+      return <svg {...props}><path d="M3 9l1.5-4.5h15L21 9" /><path d="M4 9v11h16V9" /><path d="M9 20v-6h6v6" /></svg>;
     case 'app':
-      return (
-        <svg {...props}>
-          <rect x="7" y="3" width="10" height="18" rx="2" />
-          <path d="M11 18h2" />
-        </svg>
-      );
+      return <svg {...props}><rect x="7" y="3" width="10" height="18" rx="2" /><path d="M11 18h2" /></svg>;
     case 'mobile':
-      return (
-        <svg {...props}>
-          <rect x="4" y="5" width="16" height="14" rx="2" />
-          <path d="M8 9h8M8 13h5" />
-        </svg>
-      );
+      return <svg {...props}><rect x="4" y="5" width="16" height="14" rx="2" /><path d="M8 9h8M8 13h5" /></svg>;
   }
 }
 
-/* ------------------------------------------------------------------------ */
-/*                          What Our Buyers Say                             */
-/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/*                       What Our Buyers Say                           */
+/* ------------------------------------------------------------------ */
 
 function BuyerTestimonials() {
   return (
-    <SectionCard title="What Our Buyers Say">
+    <SectionCard title="What Our Buyers Say" icon="💬">
       <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {TESTIMONIALS.map((t) => (
           <li key={t.name}>
@@ -361,11 +323,19 @@ function BuyerTestimonials() {
 
 function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   return (
-    <article className="flex h-full flex-col gap-3 rounded-md border border-ink-200 bg-white p-4 shadow-sm">
-      <p className="text-xs italic text-ink-700">&ldquo;{testimonial.quote}&rdquo;</p>
+    <article className="flex h-full flex-col gap-3 rounded-xl border border-ink-200 bg-white p-4 shadow-sm transition-all duration-150 hover:shadow-[var(--shadow-card-hover)]">
+      {/* Stars */}
+      <div className="flex gap-0.5" aria-label="5 stars">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <svg key={i} viewBox="0 0 16 16" className="size-3.5 text-yellow-400" fill="currentColor" aria-hidden>
+            <path d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.4l-3.7 1.9.7-4.1-3-2.9 4.2-.7z" />
+          </svg>
+        ))}
+      </div>
+      <p className="text-xs italic leading-relaxed text-ink-700">&ldquo;{testimonial.quote}&rdquo;</p>
       <div
         className={cn(
-          'mt-auto flex aspect-video items-center justify-center rounded-md',
+          'mt-auto flex aspect-video items-center justify-center rounded-xl',
           testimonial.thumbColorClass,
         )}
         aria-hidden
@@ -373,28 +343,37 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
         <PlayIcon />
       </div>
       <div>
-        <p className="text-xs font-semibold text-ink-900">{testimonial.name}</p>
+        <p className="text-xs font-bold text-ink-900">{testimonial.name}</p>
         <p className="text-[11px] text-ink-500">{testimonial.role}</p>
       </div>
     </article>
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/*                              Shared bits                                 */
-/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/*                           Shared bits                               */
+/* ------------------------------------------------------------------ */
 
 function SectionCard({
   title,
+  icon,
   children,
 }: {
   title: string;
+  icon?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-md border border-ink-200 bg-white p-4 shadow-sm sm:p-5">
-      <h2 className="mb-4 text-sm font-semibold text-ink-900">{title}</h2>
-      {children}
+    <section className="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm">
+      <header className="flex items-center gap-2 border-b border-ink-100 bg-gradient-to-r from-ink-50 to-white px-5 py-3.5">
+        {icon && (
+          <span className="flex size-7 items-center justify-center rounded-lg bg-brand-100 text-sm" aria-hidden>
+            {icon}
+          </span>
+        )}
+        <h2 className="text-sm font-bold text-ink-900">{title}</h2>
+      </header>
+      <div className="p-5">{children}</div>
     </section>
   );
 }
@@ -403,7 +382,7 @@ function PackageIllustration() {
   return (
     <svg
       viewBox="0 0 64 64"
-      className="size-16 text-ink-400"
+      className="size-10 text-ink-400"
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
@@ -421,16 +400,7 @@ function PackageIllustration() {
 
 function PlusIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className="size-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M12 5v14M5 12h14" />
     </svg>
   );
@@ -438,12 +408,7 @@ function PlusIcon() {
 
 function PlayIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className="size-10 text-white drop-shadow"
-      fill="currentColor"
-      aria-hidden
-    >
+    <svg viewBox="0 0 24 24" className="size-10 text-white drop-shadow-md" fill="currentColor" aria-hidden>
       <path d="M8 5v14l11-7z" />
     </svg>
   );

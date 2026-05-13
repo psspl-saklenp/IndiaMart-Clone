@@ -10,13 +10,9 @@ interface SidebarItem {
   label: string;
   href: string;
   icon: React.ReactNode;
+  description?: string;
 }
 
-/**
- * Left rail used inside the seller area only. Mirrors the buyer sidebar in
- * shape and behaviour (sticky, full-height, flush with the top bar) but
- * surfaces the seller-specific routes.
- */
 export function SellerSidebar() {
   const { user } = useAuth();
   const pathname = usePathname();
@@ -25,36 +21,45 @@ export function SellerSidebar() {
   const displayName = user?.name ?? 'My business';
 
   const items: SidebarItem[] = [
-    { label: 'Dashboard', href: '/seller/dashboard', icon: <IconHome /> },
-    { label: 'Products', href: '/seller/products', icon: <IconBox /> },
-    {
-      label: 'Inquiries',
-      href: '/seller/inquiries',
-      icon: <IconMail />,
-    },
-    { label: 'Buy leads', href: '/seller/leads', icon: <IconLead /> },
+    { label: 'Dashboard', href: '/seller/dashboard', icon: <IconHome />, description: 'Overview & stats' },
+    { label: 'Products', href: '/seller/products', icon: <IconBox />, description: 'Manage catalog' },
+    { label: 'Inquiries', href: '/seller/inquiries', icon: <IconMail />, description: 'Buyer messages' },
+    { label: 'Buy leads', href: '/seller/leads', icon: <IconLead />, description: 'RFQ marketplace' },
   ];
 
   return (
-    <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 -mt-8 flex-col self-start overflow-y-auto rounded-b-md border-x border-b border-ink-200 bg-white shadow-sm lg:flex">
+    <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-64 shrink-0 -mt-8 flex-col self-start overflow-y-auto rounded-xl border border-ink-200 bg-white shadow-sm lg:flex">
       {/* Profile header */}
-      <div className="border-b border-ink-200 p-4">
+      <div className="bg-gradient-to-br from-brand-700 to-brand-800 p-4 rounded-t-xl">
         <div className="flex items-center gap-3">
-          <span className="flex size-12 items-center justify-center rounded-full bg-[var(--color-im-navy-700)] text-base font-semibold text-white">
+          <span className="flex size-12 items-center justify-center rounded-full bg-white/20 text-base font-bold text-white ring-2 ring-white/30 shadow-sm">
             {initial}
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-ink-900">{displayName}</p>
-            <p className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
-              Seller
-            </p>
+            <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-yellow-300/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-yellow-300">
+              <span aria-hidden>✓</span> Seller
+            </span>
           </div>
+        </div>
+        {/* Quick actions */}
+        <div className="mt-3">
+          <Link
+            href="/seller/products/new"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-xs font-semibold text-white hover:bg-white/25 transition-all duration-150"
+          >
+            <span aria-hidden>+</span>
+            Add new product
+          </Link>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-2">
-        <ul className="space-y-0.5">
+      <nav className="flex-1 py-3">
+        <p className="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-ink-400">
+          Navigation
+        </p>
+        <ul className="space-y-0.5 px-2">
           {items.map((item) => {
             const active =
               pathname === item.href ||
@@ -64,37 +69,68 @@ export function SellerSidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    'group flex items-center gap-3 px-4 py-2 text-sm transition-colors',
+                    'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-150',
                     active
-                      ? 'border-l-4 border-[var(--color-im-navy-700)] bg-[var(--color-im-navy-50)] pl-3 font-semibold text-[var(--color-im-navy-800)]'
-                      : 'border-l-4 border-transparent text-ink-700 hover:bg-ink-50',
+                      ? 'bg-brand-50 font-semibold text-brand-800 shadow-sm'
+                      : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900',
                   )}
                 >
                   <span
                     aria-hidden
                     className={cn(
-                      'shrink-0',
-                      active
-                        ? 'text-[var(--color-im-navy-700)]'
-                        : 'text-ink-500 group-hover:text-ink-700',
+                      'shrink-0 transition-colors',
+                      active ? 'text-brand-700' : 'text-ink-400 group-hover:text-ink-600',
                     )}
                   >
                     {item.icon}
                   </span>
-                  <span className="flex-1 truncate">{item.label}</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate">{item.label}</span>
+                    {item.description && (
+                      <span className={cn('block truncate text-[11px]', active ? 'text-brand-600' : 'text-ink-400')}>
+                        {item.description}
+                      </span>
+                    )}
+                  </div>
+                  {active && (
+                    <span className="size-1.5 rounded-full bg-brand-600 shrink-0" aria-hidden />
+                  )}
                 </Link>
               </li>
             );
           })}
         </ul>
+
+        {/* Quick links section */}
+        <div className="mt-4 px-4">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-ink-400">
+            Quick actions
+          </p>
+          <div className="space-y-1">
+            <Link
+              href="/me/profile"
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink-600 hover:bg-ink-50 hover:text-ink-900 transition-colors"
+            >
+              <span aria-hidden>👤</span>
+              My profile
+            </Link>
+            <Link
+              href="/me/dashboard"
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink-600 hover:bg-ink-50 hover:text-ink-900 transition-colors"
+            >
+              <span aria-hidden>🛒</span>
+              Switch to buyer
+            </Link>
+          </div>
+        </div>
       </nav>
 
-      <div className="border-t border-ink-200 px-4 py-3">
+      <div className="border-t border-ink-100 px-4 py-3">
         <Link
           href="#"
-          className="flex items-center gap-2 text-xs font-medium text-ink-500 hover:text-ink-800"
+          className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium text-ink-500 hover:bg-ink-50 hover:text-ink-800 transition-colors"
         >
-          <IconHelpCircle className="size-4" />
+          <IconHelpCircle className="size-4 text-ink-400" />
           Help and support
         </Link>
       </div>
@@ -102,9 +138,9 @@ export function SellerSidebar() {
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/*                            Inline SVG icons                              */
-/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/*                          Inline SVG icons                           */
+/* ------------------------------------------------------------------ */
 
 const ICON_BASE = 'size-5';
 
@@ -122,12 +158,7 @@ function svgProps(extraClass?: string) {
 }
 
 function IconHome() {
-  return (
-    <svg {...svgProps()}>
-      <path d="M3 11l9-7 9 7" />
-      <path d="M5 10v10h14V10" />
-    </svg>
-  );
+  return <svg {...svgProps()}><path d="M3 11l9-7 9 7" /><path d="M5 10v10h14V10" /></svg>;
 }
 
 function IconBox() {
@@ -141,12 +172,7 @@ function IconBox() {
 }
 
 function IconMail() {
-  return (
-    <svg {...svgProps()}>
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M3 7l9 6 9-6" />
-    </svg>
-  );
+  return <svg {...svgProps()}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></svg>;
 }
 
 function IconLead() {
