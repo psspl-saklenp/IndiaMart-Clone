@@ -1,94 +1,156 @@
-# indiamart-clone
+# IndiaMART Clone — B2B Marketplace
 
-A production-quality B2B marketplace web portal inspired by IndiaMART.
+A production-quality B2B marketplace web portal inspired by IndiaMART, built as a full-stack monorepo with a Next.js 15 frontend and a NestJS 11 backend backed by PostgreSQL 16.
 
-> **Status:** end-to-end marketplace flows are live — auth (with buyer→seller upgrade), full catalog (categories, products, images), supplier directory + public profiles, unified search, inquiries with threaded messaging, buy-leads (requirements), wishlist (saved products), seller KPI dashboard, and an admin console. Image uploads support both AWS S3 (presigned PUT) and a local-disk fallback for environments without S3 configured. See [`docs/architecture.md`](docs/architecture.md) for the architecture overview.
+> **Status:** All end-to-end marketplace flows are live — auth (with buyer→seller upgrade), full catalog (categories, products, images), supplier directory + public profiles, unified search, inquiries with threaded messaging, buy-leads (requirements), wishlist (saved products), seller KPI dashboard, and an admin console. Image uploads support both AWS S3 (presigned PUT) and a local-disk fallback. See [`docs/architecture.md`](docs/architecture.md) for the full architecture overview.
 
-## Tech stack
+---
 
-| Layer        | Choice                                                                 |
-| ------------ | ---------------------------------------------------------------------- |
-| Frontend     | Next.js 15 (App Router, Turbopack), React 19, TypeScript 5, Tailwind CSS v4 |
-| State        | Redux Toolkit (auth + UI state), TanStack Query v5 (server state)      |
-| Backend      | NestJS 11, TypeScript 5, Sequelize-TypeScript, Joi config validation   |
-| Database     | PostgreSQL 16 (`uuid-ossp`, `pg_trgm`, `unaccent`)                     |
-| Auth         | JWT access (15m, in-memory) + refresh (7d, httpOnly cookie), bcrypt    |
-| Object store | AWS S3 via presigned PUT URLs **or** local-disk fallback (`uploads/`)  |
-| Tooling      | npm workspaces, ESLint, Prettier, Docker Compose, GitHub Actions       |
+## Table of Contents
 
-## Repository layout
+- [Tech Stack](#tech-stack)
+- [Repository Layout](#repository-layout)
+- [Prerequisites](#prerequisites)
+- [First-Time Setup](#first-time-setup)
+- [Database Setup](#database-setup)
+- [Running Dev Servers](#running-dev-servers)
+- [Smoke Checks](#smoke-checks)
+- [Useful Commands](#useful-commands)
+- [Environment Variables](#environment-variables)
+- [Frontend Route Map](#frontend-route-map)
+- [API Reference](#api-reference)
+  - [Auth](#auth)
+  - [Catalog](#catalog)
+  - [Suppliers, Inquiries, Requirements, Saved, Search](#suppliers-inquiries-requirements-saved-search)
+  - [Seller Dashboard & Admin](#seller-dashboard--admin)
+  - [Image Uploads](#image-uploads)
+- [Default Seed Data](#default-seed-data)
+- [Project Conventions](#project-conventions)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## Tech Stack
+
+| Layer        | Technology                                                                          |
+| ------------ | ----------------------------------------------------------------------------------- |
+| Frontend     | Next.js 15 (App Router, Turbopack), React 19, TypeScript 5, Tailwind CSS v4         |
+| State        | Redux Toolkit (auth + UI state), TanStack Query v5 (server state)                   |
+| Backend      | NestJS 11, TypeScript 5, Sequelize-TypeScript, Joi config validation                |
+| Database     | PostgreSQL 16 (`uuid-ossp`, `pg_trgm`, `unaccent`)                                  |
+| Auth         | JWT access (15 min, in-memory) + refresh (7 days, httpOnly cookie), bcrypt (12 rounds) |
+| Object Store | AWS S3 via presigned PUT URLs **or** local-disk fallback (`uploads/`)               |
+| Testing      | Jest (backend), Vitest (frontend)                                                   |
+| Tooling      | npm workspaces, ESLint, Prettier, Docker Compose, GitHub Actions CI                 |
+
+---
+
+## Repository Layout
 
 ```
 indiamart-clone/
-├── backend/                NestJS API (port 3001)
-├── frontend/               Next.js app (port 3000)
-├── docker/                 Container init scripts (Postgres bootstrap SQL)
-├── docs/                   Architecture docs
-├── .github/workflows/      CI (lint + build + tests, both workspaces)
-├── docker-compose.yml      Local Postgres 16 + pgAdmin
-└── package.json            npm workspaces root
+├── backend/                  NestJS API (port 3001)
+│   ├── src/
+│   │   ├── common/           Guards, decorators, health, utils
+│   │   ├── config/           Joi-validated env config
+│   │   ├── database/         Migrations, seeders, models
+│   │   └── modules/          Domain modules (auth, products, sellers, …)
+│   └── package.json
+├── frontend/                 Next.js app (port 3000)
+│   ├── src/
+│   │   ├── app/              App Router route groups
+│   │   ├── components/       Shared UI primitives
+│   │   ├── features/         Feature-sliced modules
+│   │   ├── hooks/            Shared custom hooks
+│   │   ├── lib/              Axios instance, utilities
+│   │   ├── store/            Redux store (auth + ui slices)
+│   │   └── types/            Shared TypeScript types
+│   └── package.json
+├── docker/                   Container init scripts (Postgres bootstrap SQL)
+├── docs/                     Architecture docs
+├── .github/workflows/        CI (lint + build + tests, both workspaces)
+├── docker-compose.yml        Local Postgres 16 + pgAdmin
+└── package.json              npm workspaces root
 ```
+
+---
 
 ## Prerequisites
 
-| Tool           | Version       | Notes                                                      |
-| -------------- | ------------- | ---------------------------------------------------------- |
-| Node.js        | `>= 20.10.0`  | Pin via `.nvmrc`. Windows: install via `nvm-windows` or `winget install OpenJS.NodeJS`. |
-| npm            | `>= 10`       | Ships with Node 20.                                        |
-| Docker Desktop | latest        | Required to run Postgres locally via `docker-compose.yml`. |
-| Git            | any recent    |                                                            |
+| Tool           | Version      | Notes                                                                                   |
+| -------------- | ------------ | --------------------------------------------------------------------------------------- |
+| Node.js        | `>= 20.10.0` | Pin via `.nvmrc`. Windows: install via `nvm-windows` or `winget install OpenJS.NodeJS`. |
+| npm            | `>= 10`      | Ships with Node 20.                                                                     |
+| Docker Desktop | latest       | Required to run Postgres locally via `docker-compose.yml`.                              |
+| Git            | any recent   |                                                                                         |
 
-Optional: a Postgres GUI (pgAdmin is auto-launched at <http://localhost:5050>).
+Optional: pgAdmin is auto-launched at <http://localhost:5050> when you run `db:up`.
 
-## First-time setup
+---
 
-```pwsh
-# 1) From repo root, copy env templates
-Copy-Item .env.example .env
-Copy-Item backend\.env.example backend\.env
-Copy-Item frontend\.env.example frontend\.env.local
+## First-Time Setup
 
-# 2) Install dependencies for both workspaces
+```bash
+# 1. Copy env templates
+cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
+
+# 2. Install dependencies for both workspaces
 npm install
 
-# 3) Start Postgres + pgAdmin (Docker Desktop must be running)
+# 3. Start Postgres + pgAdmin (Docker Desktop must be running)
 npm run db:up
 
-# 4) Verify Postgres is healthy
+# 4. Verify Postgres is healthy
 docker compose ps
 ```
 
-> **Windows / PowerShell tip.** If `npm install` is slow due to antivirus scanning `node_modules`, exclude `G:\indiamart-clone\**\node_modules` from real-time scanning.
+> **Windows tip.** If `npm install` is slow due to antivirus scanning `node_modules`, exclude the repo's `node_modules` directories from real-time scanning.
 
-## Database setup
+After copying `backend/.env`, open it and fill in at minimum:
 
-After `db:up` is healthy, run the migrations and seeders:
+- `JWT_SECRET` — at least 32 characters
+- `JWT_REFRESH_SECRET` — at least 32 characters (different from `JWT_SECRET`)
 
-```pwsh
-npm run migrate          # creates all tables (users, profiles, categories, products, images, inquiries, messages, saved_products, requirements, …)
-npm run seed             # creates the default admin + the IndiaMART-style category tree + the General fallback category
+The backend will fail fast on boot if these are missing or too short (Joi validation).
+
+---
+
+## Database Setup
+
+After `db:up` is healthy, run migrations and seeders:
+
+```bash
+npm run migrate   # creates all tables
+npm run seed      # creates default admin + category tree
 ```
 
-Default admin credentials (override via `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` env vars before seeding):
+Other migration commands:
 
-- Email: `admin@indiamart.local`
-- Password: `ChangeMe@123`
+```bash
+npm run migrate:undo        # rollback last migration
+npm run migrate:undo:all    # rollback all migrations
+npm run seed:undo:all       # remove all seeded rows
+```
+
+Default admin credentials (override via env vars before seeding):
+
+| Field    | Value                  | Override env var  |
+| -------- | ---------------------- | ----------------- |
+| Email    | `admin@indiamart.local`| `ADMIN_EMAIL`     |
+| Password | `ChangeMe@123`         | `ADMIN_PASSWORD`  |
+| Name     | `Admin`                | `ADMIN_NAME`      |
 
 **Rotate these before any non-local deployment.**
 
-Useful related commands:
+---
 
-```pwsh
-npm run migrate:undo     # rollback last migration
-npm run migrate:undo:all # rollback all migrations
-npm run seed:undo:all    # remove all seeded rows
-```
+## Running Dev Servers
 
-## Run the dev servers
+Run each in a separate terminal:
 
-In two separate shells (or run only the one you need):
-
-```pwsh
+```bash
 # Backend (NestJS, watch mode) → http://localhost:3001
 npm run dev:backend
 
@@ -96,25 +158,34 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
-### Smoke checks
+---
 
-| Check               | URL                                              | Expected                                              |
-| ------------------- | ------------------------------------------------ | ----------------------------------------------------- |
-| Backend liveness    | <http://localhost:3001/api/v1/health>            | `{ "status": "ok", ... }`                             |
-| Backend DB readiness| <http://localhost:3001/api/v1/health/db>         | `{ "database": { "connected": true, ... } }`          |
-| Swagger / OpenAPI   | <http://localhost:3001/api/docs>                 | Swagger UI (non-production only)                      |
-| Upload backend      | <http://localhost:3001/api/v1/uploads/status>    | `{ "storage": "s3" \| "local", ... }`                 |
-| Frontend home       | <http://localhost:3000>                          | Redirects to `/me/dashboard` (login if logged out)    |
-| Login page          | <http://localhost:3000/login>                    | Centered card; works against the seeded admin         |
-| Register page       | <http://localhost:3000/register>                 | Buyer signup + seller upgrade modal entry point       |
+## Smoke Checks
 
-## Useful commands
+| Check                | URL                                           | Expected                                              |
+| -------------------- | --------------------------------------------- | ----------------------------------------------------- |
+| Backend liveness     | http://localhost:3001/api/v1/health           | `{ "status": "ok", ... }`                             |
+| Backend DB readiness | http://localhost:3001/api/v1/health/db        | `{ "database": { "connected": true, ... } }`          |
+| Swagger / OpenAPI    | http://localhost:3001/api/docs                | Swagger UI (non-production only)                      |
+| Upload backend       | http://localhost:3001/api/v1/uploads/status   | `{ "storage": "s3" \| "local", ... }`                 |
+| Frontend home        | http://localhost:3000                         | Redirects to `/me/dashboard` (login if logged out)    |
+| Login page           | http://localhost:3000/login                   | Centered card; works against the seeded admin         |
+| Register page        | http://localhost:3000/register                | Buyer signup + seller upgrade modal entry point       |
 
-```pwsh
+---
+
+## Useful Commands
+
+```bash
 # Lint everything
 npm run lint
+npm run lint:fix
 
-# Run all tests across workspaces (backend: Jest; frontend: Vitest)
+# Format with Prettier
+npm run format
+npm run format:check
+
+# Run all tests (backend: Jest; frontend: Vitest)
 npm test
 
 # Frontend only
@@ -132,150 +203,223 @@ npm run db:up        # start postgres + pgadmin
 npm run db:down      # stop containers (keep volumes)
 npm run db:reset     # destroy volumes and rebuild (DROPS ALL DATA)
 npm run db:logs      # tail postgres logs
+
+# Build both workspaces
+npm run build
 ```
 
-Migrations and seeders are wired through `sequelize-cli` and exposed via npm aliases (`migrate`, `migrate:undo`, `migrate:undo:all`, `seed`, `seed:undo:all`).
+---
 
-## Environment variables
+## Environment Variables
 
-Each workspace owns its own `.env.example`:
+Each workspace owns its own `.env.example`. Copy and fill before running.
 
-- **`./.env`** — only consumed by `docker-compose.yml` (DB credentials, pgAdmin login).
-- **`backend/.env`** — backend runtime (port, DB connection, JWT secrets, AWS placeholders, throttling, Swagger toggle).
-- **`frontend/.env.local`** — frontend public vars (`NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_ENV`).
+### Root `.env` (consumed by `docker-compose.yml` only)
 
-Backend env vars are validated by Joi on boot (`backend/src/config/validation.schema.ts`); missing/invalid values fail fast with a clear error.
+| Variable          | Purpose                        |
+| ----------------- | ------------------------------ |
+| `POSTGRES_USER`   | Postgres superuser name        |
+| `POSTGRES_PASSWORD` | Postgres superuser password  |
+| `POSTGRES_DB`     | Database name                  |
+| `PGADMIN_EMAIL`   | pgAdmin login email            |
+| `PGADMIN_PASSWORD`| pgAdmin login password         |
 
-## Project conventions
+### `backend/.env`
 
-- TypeScript strict mode in both workspaces.
-- Path aliases declared in each workspace's `tsconfig.json` (e.g. `@/lib/axios`, `@/components/...`, `@/features/...`).
-- Commits follow Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, …).
-- All git operations require explicit approval (per project rule); we never `git push`.
+| Variable                    | Purpose                                      | Required |
+| --------------------------- | -------------------------------------------- | -------- |
+| `NODE_ENV`                  | Runtime mode (`development` / `production`)  | Yes      |
+| `PORT`                      | NestJS listen port (default `3001`)          | Yes      |
+| `CLIENT_URL`                | Allowed CORS origin(s), comma-separated      | Yes      |
+| `DB_HOST/PORT/USER/PASS/NAME_DEVELOPMENT` | Postgres connection params    | Yes      |
+| `JWT_SECRET`                | Access-token signing key (≥ 32 chars)        | Yes      |
+| `JWT_REFRESH_SECRET`        | Refresh-token signing key (≥ 32 chars)       | Yes      |
+| `JWT_EXPIRES_IN`            | Access token TTL (default `15m`)             | No       |
+| `JWT_REFRESH_EXPIRES_IN`    | Refresh token TTL (default `7d`)             | No       |
+| `AWS_S3_BUCKET`             | S3 bucket name (enables presigned uploads)   | No       |
+| `AWS_REGION`                | AWS region                                   | No       |
+| `AWS_ACCESS_KEY_ID`         | AWS credentials                              | No       |
+| `AWS_SECRET_ACCESS_KEY`     | AWS credentials                              | No       |
+| `THROTTLE_TTL`              | Rate-limit window in ms (default `60000`)    | No       |
+| `THROTTLE_LIMIT`            | Max requests per window (default `100`)      | No       |
+| `SWAGGER_ENABLED`           | Enable Swagger UI (`true` / `false`)         | No       |
+| `ADMIN_EMAIL`               | Seed admin email                             | No       |
+| `ADMIN_PASSWORD`            | Seed admin password                          | No       |
+| `ADMIN_NAME`                | Seed admin display name                      | No       |
 
-## Troubleshooting
+Backend env vars are validated by Joi on boot (`backend/src/config/validation.schema.ts`). Missing or invalid required vars cause an immediate, descriptive boot failure.
 
-| Problem                                                  | Fix                                                                                                |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Backend boot fails with Joi error                        | Copy `backend/.env.example` → `backend/.env` and fill `JWT_SECRET` / `JWT_REFRESH_SECRET` (≥16 chars). |
-| `docker compose up` says port 5432 already in use        | A native Postgres is running. Stop it, or change `DB_PORT` in `.env`.                              |
-| Frontend can't reach backend                             | Confirm backend is on port 3001 and `NEXT_PUBLIC_API_URL` matches. CORS allows `CLIENT_URL` only.   |
-| `npm install` fails on Windows due to long paths         | Run `git config --system core.longpaths true` and re-install.                                      |
-| `/uploads/presign` returns 503                           | `AWS_S3_BUCKET` is unset. Either fill the AWS env vars, or use `POST /uploads/file` (local fallback). |
+### `frontend/.env.local`
 
-## Frontend route map
+| Variable               | Purpose                              | Default                          |
+| ---------------------- | ------------------------------------ | -------------------------------- |
+| `NEXT_PUBLIC_API_URL`  | Backend base URL                     | `http://localhost:3001/api/v1`   |
+| `NEXT_PUBLIC_SITE_URL` | Canonical site URL                   | `http://localhost:3000`          |
+| `NEXT_PUBLIC_ENV`      | Environment label (`development` …)  | `development`                    |
 
-The root path `/` redirects to `/me/dashboard`. The buyer experience is the default for every authenticated user; sellers and admins jump into their own areas explicitly.
+---
 
-| Group     | Path                              | Who can see it                       |
-| --------- | --------------------------------- | ------------------------------------ |
-| `(auth)`  | `/login`, `/register`             | Public                               |
-| `(buyer)` | `/me/dashboard`, `/me/profile`, `/me/inquiries[/:id]`, `/me/saved`, `/me/requirements`, `/me/know-your-seller`, `/me/faq`, `/me/ship`, `/category/:slug`, `/product/:slug`, `/supplier/:slug`, `/search`, `/requirements/new` | Buyer + seller + admin (every authenticated user) |
-| `(seller)`| `/seller/dashboard`, `/seller/products[/:id/edit]`, `/seller/products/new`, `/seller/inquiries[/:id]`, `/seller/leads`, `/seller/profile` | Seller + admin                       |
-| `(admin)` | `/admin/dashboard`, `/admin/users`, `/admin/sellers`, `/admin/products`, `/admin/categories`, `/admin/inquiries` | Admin                                |
+## Frontend Route Map
 
-## Auth at a glance
+The root path `/` redirects to `/me/dashboard`. The buyer experience is the default for every authenticated user; sellers and admins access their own areas explicitly.
 
-| Endpoint                       | Method | Auth        | Notes                                                                   |
-| ------------------------------ | ------ | ----------- | ----------------------------------------------------------------------- |
-| `/api/v1/auth/register`        | POST   | Public      | Buyer (default) or seller. Throttled 10/hour.                            |
-| `/api/v1/auth/register-seller` | POST   | Public      | **Deprecated.** One-shot seller signup. Throttled 10/hour. Prefer the upgrade flow. |
-| `/api/v1/auth/upgrade-to-seller` | POST | Bearer JWT  | Promote authenticated buyer to seller; collects business details + initial catalog. Rotates token pair. |
-| `/api/v1/auth/login`           | POST   | Public      | bcrypt-verified. Returns access token; sets refresh cookie. 5/min.       |
-| `/api/v1/auth/refresh`         | POST   | Refresh cookie | Reads `refresh_token` httpOnly cookie; rotates both tokens.            |
-| `/api/v1/auth/logout`          | POST   | Public      | Clears the refresh cookie.                                              |
-| `/api/v1/auth/me`              | GET    | Bearer JWT  | Current user with linked profile.                                       |
+| Group      | Path                                                                                                                                                                  | Who can access                        |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `(auth)`   | `/login`, `/register`                                                                                                                                                 | Public                                |
+| `(buyer)`  | `/me/dashboard`, `/me/profile`, `/me/inquiries[/:id]`, `/me/saved`, `/me/requirements`, `/me/know-your-seller`, `/me/faq`, `/me/ship`, `/category/:slug`, `/product/:slug`, `/supplier/:slug`, `/search`, `/requirements/new` | Any authenticated user |
+| `(seller)` | `/seller/dashboard`, `/seller/products[/:id/edit]`, `/seller/products/new`, `/seller/inquiries[/:id]`, `/seller/leads`, `/seller/profile`                             | Seller + admin                        |
+| `(admin)`  | `/admin/dashboard`, `/admin/users`, `/admin/sellers`, `/admin/products`, `/admin/categories`, `/admin/inquiries`                                                      | Admin only                            |
 
-Session model:
+Route protection is implemented client-side in `frontend/src/features/auth/protected.tsx`, which reads auth status from Redux and redirects unauthenticated or unauthorized users.
 
-- **Access token**: JWT, 15-minute lifetime, returned in JSON, held in browser memory only (Redux + axios module). Never written to `localStorage`.
-- **Refresh token**: JWT, 7-day lifetime, sent as `httpOnly` `Secure` (in production) `SameSite=Lax` cookie. Rotated on every `/auth/refresh` and on `/auth/upgrade-to-seller`.
-- All routes are protected by default (global `JwtAuthGuard`). Use `@Public()` to opt out and `@Roles(...)` plus `RolesGuard` to restrict by role.
-- Every account is a buyer by default. The `seller` role is additive on top of buyer capabilities — sellers can browse, save, send inquiries, and post requirements just like buyers.
+---
 
-## Catalog at a glance
+## API Reference
 
-| Endpoint                                      | Method | Auth          | Notes                                                              |
-| --------------------------------------------- | ------ | ------------- | ------------------------------------------------------------------ |
-| `/api/v1/categories`                          | GET    | Public        | Full nested tree (top-level + sub-categories).                     |
-| `/api/v1/categories/:slug`                    | GET    | Public        | Get one category by slug.                                          |
-| `/api/v1/categories`, `/:id`                  | POST/PATCH/DELETE | Admin | CRUD; auto slug; admin-only.                                       |
-| `/api/v1/products`                            | GET    | Public        | Paginated, filtered (q / category / sellerId / price / stock).     |
-| `/api/v1/products/mine`                       | GET    | Seller        | List the current seller's products (incl. inactive).               |
-| `/api/v1/products/:slug`                      | GET    | Public        | Detail; increments `viewCount` (fire-and-forget).                  |
-| `/api/v1/products`                            | POST   | Seller        | Create; slug auto-generated; specs JSONB.                          |
-| `/api/v1/products/:id`                        | PATCH  | Seller (own)  | Update; ownership enforced (admin can edit any).                   |
-| `/api/v1/products/:id`                        | DELETE | Seller (own)  | Soft-delete.                                                       |
-| `/api/v1/products/:id/images`                 | POST   | Seller (own)  | Attach image record after upload (S3 or local).                    |
-| `/api/v1/products/:productId/images/:imageId` | DELETE | Seller (own)  | Remove an image.                                                   |
+All routes are prefixed `/api/v1/`. Swagger UI is available at `http://localhost:3001/api/docs` in non-production environments.
 
-## Suppliers, inquiries, requirements, saved, search
+Paginated list endpoints accept `?page=&limit=&sort=&order=` and return a `PaginatedResult<T>` shape:
 
-| Endpoint                                            | Method | Auth                     | Notes                                                              |
-| --------------------------------------------------- | ------ | ------------------------ | ------------------------------------------------------------------ |
-| `/api/v1/sellers`                                   | GET    | Public                   | Paginated supplier directory; ordered by verified status + rating. |
-| `/api/v1/sellers/me`                                | GET/PATCH | Seller                | Own profile (slug is immutable).                                   |
-| `/api/v1/sellers/lookup?q=…`                        | GET    | Bearer JWT               | "Know Your Seller" partial-match lookup.                           |
-| `/api/v1/sellers/:slug`                             | GET    | Public                   | Public supplier profile + their active products.                   |
-| `/api/v1/inquiries`                                 | POST   | Any authenticated user   | Send an inquiry to a supplier.                                     |
-| `/api/v1/inquiries`                                 | GET    | Bearer JWT               | Role-scoped list (buyer→sent, seller→received, admin→all).         |
-| `/api/v1/inquiries/counts`                          | GET    | Bearer JWT               | Unread counts (as buyer + as seller) for the navbar badge.         |
-| `/api/v1/inquiries/:id`                             | GET    | Participant or admin     | Inquiry detail + thread.                                           |
-| `/api/v1/inquiries/:id/messages`                    | POST   | Participant              | Reply on the thread.                                               |
-| `/api/v1/inquiries/:id/status`                      | PATCH  | Seller / admin           | `new` → `responded` → `closed`.                                    |
-| `/api/v1/requirements`                              | GET    | Public                   | Open buy-leads feed (paginated).                                   |
-| `/api/v1/requirements/feed`                         | GET    | Seller / admin           | Same as above but excludes the viewer's own posts.                 |
-| `/api/v1/requirements/mine`                         | GET    | Any authenticated user   | Own posted requirements.                                           |
-| `/api/v1/requirements/:id`                          | GET    | Public                   | Get one requirement.                                               |
-| `/api/v1/requirements`                              | POST   | Any authenticated user   | Post a new buy requirement.                                        |
-| `/api/v1/requirements/:id/close`                    | PATCH  | Owner                    | Close one of your own requirements.                                |
-| `/api/v1/requirements/:id/respond`                  | POST   | Seller / admin           | Respond as a seller; creates an inquiry with the buyer's context.  |
-| `/api/v1/saved-products`                            | GET    | Any authenticated user   | List saved products (full DTOs).                                   |
-| `/api/v1/saved-products/ids`                        | GET    | Any authenticated user   | Just the saved product ids (for heart toggles).                    |
-| `/api/v1/saved-products`                            | POST   | Any authenticated user   | Save a product.                                                    |
-| `/api/v1/saved-products/:productId`                 | DELETE | Any authenticated user   | Remove a product from the saved list.                              |
-| `/api/v1/search?q=…&type=all\|products\|suppliers\|categories` | GET | Public        | Unified search; `type=all` returns up to 8 of each.                |
-| `/api/v1/search/suggest?q=…`                        | GET    | Public                   | Lightweight autocomplete (up to 5 hits per type).                  |
+```json
+{
+  "data": [...],
+  "total": 100,
+  "page": 1,
+  "limit": 20,
+  "totalPages": 5
+}
+```
 
-## Seller dashboard & admin
+### Auth
 
-| Endpoint                                       | Method | Auth           | Notes                                                              |
-| ---------------------------------------------- | ------ | -------------- | ------------------------------------------------------------------ |
-| `/api/v1/seller-dashboard/stats`               | GET    | Seller / admin | KPIs for the current seller.                                       |
-| `/api/v1/seller-dashboard/timeseries?days=30`  | GET    | Seller / admin | Inquiries received per day.                                        |
-| `/api/v1/seller-dashboard/top-products?by=views\|inquiries&limit=5` | GET | Seller / admin | Top products. |
-| `/api/v1/admin/stats`                          | GET    | Admin          | Global platform metrics.                                           |
-| `/api/v1/admin/users`                          | GET    | Admin          | Filterable list of all users (role / verified / q).                |
-| `/api/v1/admin/users/:id`                      | PATCH/DELETE | Admin    | Update role + verification flag; soft-delete.                      |
-| `/api/v1/admin/sellers/:slug/verify`           | PATCH  | Admin          | Toggle a supplier's verified flag.                                 |
-| `/api/v1/admin/products/:id/moderate`          | PATCH  | Admin          | Toggle a product's `isActive` (visible/hidden).                    |
+| Endpoint                          | Method | Auth           | Notes                                                                                    |
+| --------------------------------- | ------ | -------------- | ---------------------------------------------------------------------------------------- |
+| `/auth/register`                  | POST   | Public         | Buyer (default) or seller. Throttled 10/hour.                                            |
+| `/auth/register-seller`           | POST   | Public         | **Deprecated.** One-shot seller signup. Prefer the upgrade flow.                         |
+| `/auth/upgrade-to-seller`         | POST   | Bearer JWT     | Promote authenticated buyer to seller; collects business details. Rotates token pair.    |
+| `/auth/login`                     | POST   | Public         | bcrypt-verified. Returns access token; sets refresh cookie. Throttled 5/min.             |
+| `/auth/refresh`                   | POST   | Refresh cookie | Reads `refresh_token` httpOnly cookie; rotates both tokens.                              |
+| `/auth/logout`                    | POST   | Public         | Clears the refresh cookie.                                                               |
+| `/auth/me`                        | GET    | Bearer JWT     | Current user with linked profile.                                                        |
 
-## Image uploads
+**Session model:**
 
-The backend supports two interchangeable storage backends. Call `GET /api/v1/uploads/status` to see which is currently active.
+- **Access token** — 15-minute JWT, returned in JSON, held in browser memory only (Redux + axios module). Never written to `localStorage`.
+- **Refresh token** — 7-day JWT, sent as `httpOnly Secure SameSite=Lax` cookie. Rotated on every `/auth/refresh` and on `/auth/upgrade-to-seller`.
+- All routes are protected by default (global `JwtAuthGuard`). Use `@Public()` to opt out and `@Roles(...)` to restrict by role.
+- Every account is a buyer by default. The `seller` role is additive — sellers can browse, save, send inquiries, and post requirements just like buyers.
 
-### S3 presigned PUT (preferred when AWS env vars are populated)
+### Catalog
 
-1. Browser calls `POST /uploads/presign` with `{ fileName, contentType, purpose }` and gets back `{ uploadUrl, publicUrl, s3Key }`.
+| Endpoint                                      | Method            | Auth          | Notes                                                          |
+| --------------------------------------------- | ----------------- | ------------- | -------------------------------------------------------------- |
+| `/categories`                                 | GET               | Public        | Full nested tree (top-level + sub-categories).                 |
+| `/categories/:slug`                           | GET               | Public        | Get one category by slug.                                      |
+| `/categories`                                 | POST              | Admin         | Create category; slug auto-generated.                          |
+| `/categories/:id`                             | PATCH / DELETE    | Admin         | Update or soft-delete a category.                              |
+| `/products`                                   | GET               | Public        | Paginated, filtered (`q` / `category` / `sellerId` / `price` / `stock`). |
+| `/products/mine`                              | GET               | Seller        | Current seller's products (incl. inactive).                    |
+| `/products/:slug`                             | GET               | Public        | Detail; increments `viewCount` (fire-and-forget).              |
+| `/products`                                   | POST              | Seller        | Create; slug auto-generated; specs stored as JSONB.            |
+| `/products/:id`                               | PATCH             | Seller (own)  | Update; ownership enforced (admin can edit any).               |
+| `/products/:id`                               | DELETE            | Seller (own)  | Soft-delete.                                                   |
+| `/products/:id/images`                        | POST              | Seller (own)  | Attach image record after upload (S3 or local).                |
+| `/products/:productId/images/:imageId`        | DELETE            | Seller (own)  | Remove an image.                                               |
+
+### Suppliers, Inquiries, Requirements, Saved, Search
+
+| Endpoint                                                        | Method | Auth                   | Notes                                                                                  |
+| --------------------------------------------------------------- | ------ | ---------------------- | -------------------------------------------------------------------------------------- |
+| `/sellers`                                                      | GET    | Public                 | Paginated supplier directory; ordered by verified status + rating.                     |
+| `/sellers/me`                                                   | GET    | Seller                 | Own profile.                                                                           |
+| `/sellers/me`                                                   | PATCH  | Seller                 | Update own profile (slug is immutable).                                                |
+| `/sellers/lookup?q=`                                            | GET    | Bearer JWT             | "Know Your Seller" partial-match lookup.                                               |
+| `/sellers/:slug`                                                | GET    | Public                 | Public supplier profile + their active products.                                       |
+| `/inquiries`                                                    | POST   | Any authenticated user | Send an inquiry to a supplier.                                                         |
+| `/inquiries`                                                    | GET    | Bearer JWT             | Role-scoped list (buyer → sent, seller → received, admin → all).                       |
+| `/inquiries/counts`                                             | GET    | Bearer JWT             | Unread counts (as buyer + as seller) for the navbar badge.                             |
+| `/inquiries/:id`                                                | GET    | Participant or admin   | Inquiry detail + full message thread.                                                  |
+| `/inquiries/:id/messages`                                       | POST   | Participant            | Reply on the thread.                                                                   |
+| `/inquiries/:id/status`                                         | PATCH  | Seller / admin         | Transition status: `new` → `responded` → `closed`.                                    |
+| `/requirements`                                                 | GET    | Public                 | Open buy-leads feed (paginated).                                                       |
+| `/requirements/feed`                                            | GET    | Seller / admin         | Same as above but excludes the viewer's own posts.                                     |
+| `/requirements/mine`                                            | GET    | Any authenticated user | Own posted requirements.                                                               |
+| `/requirements/:id`                                             | GET    | Public                 | Get one requirement.                                                                   |
+| `/requirements`                                                 | POST   | Any authenticated user | Post a new buy requirement.                                                            |
+| `/requirements/:id/close`                                       | PATCH  | Owner                  | Close one of your own requirements.                                                    |
+| `/requirements/:id/respond`                                     | POST   | Seller / admin         | Respond as a seller; atomically creates an inquiry with the buyer's context.           |
+| `/saved-products`                                               | GET    | Any authenticated user | List saved products (full DTOs).                                                       |
+| `/saved-products/ids`                                           | GET    | Any authenticated user | Just the saved product IDs (for heart-toggle state).                                   |
+| `/saved-products`                                               | POST   | Any authenticated user | Save a product.                                                                        |
+| `/saved-products/:productId`                                    | DELETE | Any authenticated user | Remove a product from the saved list.                                                  |
+| `/search?q=&type=all\|products\|suppliers\|categories`          | GET    | Public                 | Unified search; `type=all` returns up to 8 of each type.                               |
+| `/search/suggest?q=`                                            | GET    | Public                 | Lightweight autocomplete (up to 5 hits per type).                                      |
+
+### Seller Dashboard & Admin
+
+| Endpoint                                                        | Method       | Auth           | Notes                                                          |
+| --------------------------------------------------------------- | ------------ | -------------- | -------------------------------------------------------------- |
+| `/seller-dashboard/stats`                                       | GET          | Seller / admin | KPIs for the current seller.                                   |
+| `/seller-dashboard/timeseries?days=30`                          | GET          | Seller / admin | Inquiries received per day (timeseries).                       |
+| `/seller-dashboard/top-products?by=views\|inquiries&limit=5`    | GET          | Seller / admin | Top products by views or inquiries.                            |
+| `/admin/stats`                                                  | GET          | Admin          | Global platform metrics.                                       |
+| `/admin/users`                                                  | GET          | Admin          | Filterable list of all users (role / verified / q).            |
+| `/admin/users/:id`                                              | PATCH/DELETE | Admin          | Update role + verification flag; soft-delete.                  |
+| `/admin/sellers/:slug/verify`                                   | PATCH        | Admin          | Toggle a supplier's verified flag.                             |
+| `/admin/products/:id/moderate`                                  | PATCH        | Admin          | Toggle a product's `isActive` (visible / hidden).              |
+
+### Image Uploads
+
+Call `GET /api/v1/uploads/status` to see which storage backend is active.
+
+**S3 presigned PUT (preferred when AWS env vars are set):**
+
+1. Browser calls `POST /uploads/presign` with `{ fileName, contentType, purpose }` → receives `{ uploadUrl, publicUrl, s3Key }`.
 2. Browser `PUT`s the file body directly to `uploadUrl` with the matching `Content-Type`.
-3. Browser calls `POST /products/:id/images` with `{ s3Key, url: publicUrl, isPrimary?, position? }` to record the image on the product.
+3. Browser calls `POST /products/:id/images` with `{ s3Key, url: publicUrl, isPrimary?, position? }`.
 
-The server never proxies bytes — scales independent of upload size. If `AWS_S3_BUCKET` is unset the presign endpoint returns HTTP 503 with a human-readable hint to populate the AWS env vars (or to use the local fallback below).
+The server never proxies bytes. If `AWS_S3_BUCKET` is unset, the presign endpoint returns HTTP 503 with a hint to populate the AWS env vars or use the local fallback.
 
-### Local-disk fallback (`POST /uploads/file`)
-
-For environments without AWS configured (or for quick local development):
+**Local-disk fallback (`POST /uploads/file`):**
 
 1. Browser POSTs `multipart/form-data` to `/uploads/file` with the file under the `file` field and an optional `purpose`.
-2. The backend stores the file under `backend/uploads/...` and serves it back at `/uploads/...` (mounted via `@nestjs/serve-static`).
+2. Backend stores the file under `backend/uploads/...` and serves it at `/uploads/...` via `@nestjs/serve-static`.
 3. Browser calls `POST /products/:id/images` with the returned absolute `url`.
 
 Max upload size and accepted MIME types (`image/jpeg|png|webp|gif`) are reported by `/uploads/status`.
 
-## Default seed data
+---
 
-- 6 top-level categories (Apparel & Fashion, Electronics & Electrical, Industrial Supplies, Building & Construction, Agriculture, Food & Beverages) with 5 sub-categories each.
-- A `general` fallback category used by the multi-step seller signup when the seller doesn't explicitly assign one.
-- Admin user (`admin@indiamart.local` / `ChangeMe@123`) for catalog and platform moderation.
-#   I n d i a M a r t - C l o n e  
- 
+## Default Seed Data
+
+- **Admin user** — `admin@indiamart.local` / `ChangeMe@123` (override via `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` before seeding).
+- **6 top-level categories** — Apparel & Fashion, Electronics & Electrical, Industrial Supplies, Building & Construction, Agriculture, Food & Beverages — each with 5 sub-categories.
+- **`general` fallback category** — used by the multi-step seller signup when no explicit category is provided.
+
+All seeders are idempotent (safe to re-run).
+
+---
+
+## Project Conventions
+
+- **TypeScript strict mode** in both workspaces. No `any` without an explanatory comment.
+- **Path aliases** declared in each workspace's `tsconfig.json` (e.g. `@/lib/axios`, `@/components/...`, `@/features/...`).
+- **Commits** follow Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`).
+- **Migrations** are the single source of truth for the DB schema. Never call `Model.sync()`. Never mutate a committed migration — add a new one.
+- **Ownership checks** live in services (`assertOwnerOrAdmin()`), not in guards, because the loaded entity is needed for comparison.
+- **Fire-and-forget side effects** (e.g. view-count increment) are wrapped in `try/catch` and never `await`ed on the hot path.
+
+---
+
+## Troubleshooting
+
+| Problem                                                   | Fix                                                                                                  |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Backend boot fails with Joi error                         | Copy `backend/.env.example` → `backend/.env` and fill `JWT_SECRET` / `JWT_REFRESH_SECRET` (≥ 32 chars). |
+| `docker compose up` says port 5432 already in use         | A native Postgres is running. Stop it, or change `DB_PORT` in `.env`.                               |
+| Frontend can't reach backend                              | Confirm backend is on port 3001 and `NEXT_PUBLIC_API_URL` matches. CORS allows `CLIENT_URL` only.    |
+| `npm install` fails on Windows due to long paths          | Run `git config --system core.longpaths true` and re-install.                                        |
+| `/uploads/presign` returns 503                            | `AWS_S3_BUCKET` is unset. Fill the AWS env vars, or use `POST /uploads/file` (local fallback).       |
+| Migrations fail with "relation already exists"            | The DB has a partial schema. Run `npm run migrate:undo:all` then `npm run migrate` to reset cleanly. |
+| Seeder fails with unique constraint                       | Seeders are idempotent — re-running is safe. If it still fails, check for stale data with a different email. |
+| Frontend shows blank page after login                     | Check browser console for 401 errors. The refresh cookie may be missing — log out and log back in.   |
