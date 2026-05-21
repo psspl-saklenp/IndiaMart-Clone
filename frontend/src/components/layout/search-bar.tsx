@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   useCallback,
   useEffect,
@@ -20,6 +20,10 @@ import type { SuggestResponse } from '@/types/search';
 interface Props {
   className?: string;
   placeholder?: string;
+  buttonText?: string;
+  formClassName?: string;
+  inputClassName?: string;
+  buttonClassName?: string;
 }
 
 type FlatSuggestion =
@@ -30,9 +34,14 @@ type FlatSuggestion =
 export function SearchBar({
   className = '',
   placeholder = 'Search products, suppliers, categories…',
+  buttonText = 'Search',
+  formClassName = 'flex w-full items-center overflow-hidden rounded-md border border-ink-200 bg-white text-sm focus-within:border-ink-400 h-9',
+  inputClassName = 'flex-1 bg-transparent px-3 py-1.5 text-ink-900 placeholder:text-ink-400 focus:outline-none h-full',
+  buttonClassName = 'bg-[var(--color-im-teal-600)] px-4 h-full text-xs font-semibold text-white hover:bg-[var(--color-im-teal-700)] transition-colors shrink-0',
 }: Props) {
   const router = useRouter();
   const params = useSearchParams();
+  const pathname = usePathname();
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const [value, setValue] = useState(params.get('q') ?? '');
@@ -112,7 +121,8 @@ export function SearchBar({
       return;
     }
     close();
-    router.push(`/search?q=${encodeURIComponent(q)}`);
+    const target = pathname.startsWith('/me') ? '/me/search' : '/search';
+    router.push(`${target}?q=${encodeURIComponent(q)}`);
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -139,7 +149,7 @@ export function SearchBar({
       <form
         onSubmit={onSubmit}
         role="search"
-        className="flex w-full items-center overflow-hidden rounded-md border border-ink-200 bg-white text-sm focus-within:border-ink-400"
+        className={formClassName}
       >
         <input
           type="search"
@@ -157,13 +167,13 @@ export function SearchBar({
           aria-autocomplete="list"
           aria-expanded={showDropdown}
           aria-controls="search-suggestions"
-          className="flex-1 bg-transparent px-3 py-1.5 text-ink-900 placeholder:text-ink-400 focus:outline-none"
+          className={inputClassName}
         />
         <button
           type="submit"
-          className="bg-[var(--color-im-teal-600)] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-im-teal-700)]"
+          className={buttonClassName}
         >
-          Search
+          {buttonText}
         </button>
       </form>
 
@@ -214,7 +224,7 @@ export function SearchBar({
               />
               <div className="border-t border-ink-100 px-3 py-2 text-right">
                 <Link
-                  href={`/search?q=${encodeURIComponent(value.trim())}`}
+                  href={`${pathname.startsWith('/me') ? '/me/search' : '/search'}?q=${encodeURIComponent(value.trim())}`}
                   onClick={close}
                   className="text-xs font-medium text-brand-700 hover:underline"
                 >
@@ -260,9 +270,8 @@ function SuggestionGroup({
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onPick(s.href)}
-                className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-ink-50 ${
-                  isActive ? 'bg-ink-50' : ''
-                }`}
+                className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-ink-50 ${isActive ? 'bg-ink-50' : ''
+                  }`}
               >
                 {renderRow(s)}
               </button>

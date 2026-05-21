@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 import { SellerSignupTrigger } from '@/features/auth/seller-signup-trigger';
 
@@ -63,11 +66,33 @@ const COLUMNS: FooterColumn[] = [
 ];
 
 export function BuyerFooter() {
+  const pathname = usePathname();
+
+  const dynamicColumns = COLUMNS.map((col) => {
+    if (col.title === 'Buyers Tool Kit') {
+      return {
+        ...col,
+        links: col.links.map((link) => {
+          if ('href' in link) {
+            if (link.href === '/requirements/new' && pathname.startsWith('/me')) {
+              return { ...link, href: '/me/requirements/new' };
+            }
+            if (link.href === '/search' && pathname.startsWith('/me')) {
+              return { ...link, href: '/me/search' };
+            }
+          }
+          return link;
+        }),
+      };
+    }
+    return col;
+  });
+
   return (
     <footer className="border-t border-ink-200 bg-white">
       <div className="mx-auto max-w-[96rem] px-4 py-10">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-3 lg:grid-cols-5">
-          {COLUMNS.map((col, idx) => (
+          {dynamicColumns.map((col, idx) => (
             <FooterColumnView key={col.title ?? idx} column={col} />
           ))}
         </div>

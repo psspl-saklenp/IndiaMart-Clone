@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useState } from 'react';
 
+import { MegaMenu } from '@/components/layout/mega-menu';
 import { SearchBar } from '@/components/layout/search-bar';
 import { useSellAction } from '@/features/auth/use-sell-action';
 import { useAuth } from '@/hooks/use-auth';
@@ -33,15 +34,24 @@ export function BuyerAppBar() {
           </span>
         </Link>
 
-        {/* Search bar */}
-        <div className="hidden min-w-0 flex-1 max-w-xl md:block">
-          <Suspense
-            fallback={
-              <div className="h-9 rounded-xl border border-white/20 bg-white/10 animate-pulse" />
-            }
-          >
-            <SearchBar />
-          </Suspense>
+        {/* Search bar and Categories Dropdown */}
+        <div className="hidden min-w-0 flex-1 max-w-2xl md:flex items-center gap-3">
+          <MegaMenu variant="buyer" />
+          <div className="flex-1 max-w-xl">
+            <Suspense
+              fallback={
+                <div className="h-10 rounded-xl border border-white/20 bg-white/10 animate-pulse" />
+              }
+            >
+              <SearchBar
+                placeholder="Enter product / service name..."
+                buttonText="Search"
+                formClassName="flex w-full items-center overflow-hidden rounded-xl border border-white/20 bg-white/95 text-sm focus-within:border-white focus-within:bg-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-all duration-200 h-10"
+                inputClassName="flex-1 bg-transparent px-4 py-2 text-ink-900 placeholder:text-ink-400 focus:outline-none font-medium h-full"
+                buttonClassName="bg-gradient-to-r from-brand-600 to-brand-700 px-6 h-full text-xs font-bold text-white hover:from-brand-700 hover:to-brand-800 transition-all duration-150 uppercase tracking-wider shrink-0 border-l border-brand-600/10"
+              />
+            </Suspense>
+          </div>
         </div>
 
         <div className="ml-auto flex items-center gap-1">

@@ -98,7 +98,7 @@ function MyOrdersCard({ hasRequirements }: { hasRequirements: boolean }) {
             <p className="mt-4 text-sm font-medium text-ink-700">No requirements posted yet</p>
             <p className="mt-1 text-xs text-ink-500">Post a requirement to receive quotations from verified suppliers.</p>
             <Link
-              href="/requirements/new"
+              href="/me/requirements/new"
               className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:shadow-lg hover:from-brand-700 hover:to-brand-800 transition-all duration-150"
             >
               <PlusIcon />

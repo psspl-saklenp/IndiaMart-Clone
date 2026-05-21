@@ -18,7 +18,7 @@ export function DashboardSearch({ className }: DashboardSearchProps) {
   return (
     <div className={cn('flex justify-end', className)}>
       <Link
-        href="/requirements/new"
+        href="/me/requirements/new"
         className="shrink-0 rounded-md bg-[var(--color-im-indigo-700)] px-5 py-2 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[var(--color-im-indigo-600)]"
       >
         Post RFQ
