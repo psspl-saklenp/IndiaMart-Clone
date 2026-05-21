@@ -216,13 +216,16 @@ Each workspace owns its own `.env.example`. Copy and fill before running.
 
 ### Root `.env` (consumed by `docker-compose.yml` only)
 
-| Variable          | Purpose                        |
-| ----------------- | ------------------------------ |
-| `POSTGRES_USER`   | Postgres superuser name        |
-| `POSTGRES_PASSWORD` | Postgres superuser password  |
-| `POSTGRES_DB`     | Database name                  |
-| `PGADMIN_EMAIL`   | pgAdmin login email            |
-| `PGADMIN_PASSWORD`| pgAdmin login password         |
+| Variable              | Purpose                            | Default                      |
+| --------------------- | ---------------------------------- | ---------------------------- |
+| `DB_USER`             | Postgres superuser name            | `postgres`                   |
+| `DB_PASS`             | Postgres superuser password        | `postgres`                   |
+| `DB_PORT`             | Postgres host port                 | `5432`                       |
+| `DB_NAME_DEVELOPMENT` | Development database name          | `indiamart_clone_dev`        |
+| `DB_NAME_TEST`        | Test database name                 | `indiamart_clone_test`       |
+| `PGADMIN_EMAIL`       | pgAdmin login email                | `admin@indiamart.local`      |
+| `PGADMIN_PASSWORD`    | pgAdmin login password             | `admin`                      |
+| `PGADMIN_PORT`        | pgAdmin host port                  | `5050`                       |
 
 ### `backend/.env`
 
@@ -231,18 +234,30 @@ Each workspace owns its own `.env.example`. Copy and fill before running.
 | `NODE_ENV`                  | Runtime mode (`development` / `production`)  | Yes      |
 | `PORT`                      | NestJS listen port (default `3001`)          | Yes      |
 | `CLIENT_URL`                | Allowed CORS origin(s), comma-separated      | Yes      |
-| `DB_HOST/PORT/USER/PASS/NAME_DEVELOPMENT` | Postgres connection params    | Yes      |
+| `API_PREFIX`                | Global route prefix (default `api/v1`)       | No       |
+| `DB_HOST`                   | Postgres host                                | Yes      |
+| `DB_PORT`                   | Postgres port (default `5432`)               | Yes      |
+| `DB_USER`                   | Postgres username                            | Yes      |
+| `DB_PASS`                   | Postgres password                            | Yes      |
+| `DB_NAME_DEVELOPMENT`       | Dev database name                            | Yes      |
+| `DB_NAME_TEST`              | Test database name                           | No       |
+| `DB_NAME_PRODUCTION`        | Production database name                     | Prod     |
+| `DB_LOGGING`                | Log all SQL queries (`true` / `false`)       | No       |
+| `DB_POOL_MAX`               | Sequelize pool max connections (default `5`) | No       |
+| `DB_POOL_MIN`               | Sequelize pool min connections (default `0`) | No       |
 | `JWT_SECRET`                | Access-token signing key (≥ 32 chars)        | Yes      |
 | `JWT_REFRESH_SECRET`        | Refresh-token signing key (≥ 32 chars)       | Yes      |
-| `JWT_EXPIRES_IN`            | Access token TTL (default `15m`)             | No       |
-| `JWT_REFRESH_EXPIRES_IN`    | Refresh token TTL (default `7d`)             | No       |
+| `JWT_EXPIRATION`            | Access token TTL (default `15m`)             | No       |
+| `JWT_REFRESH_EXPIRATION`    | Refresh token TTL (default `7d`)             | No       |
 | `AWS_S3_BUCKET`             | S3 bucket name (enables presigned uploads)   | No       |
-| `AWS_REGION`                | AWS region                                   | No       |
+| `AWS_S3_BUCKET_PUBLIC_URL`  | Public base URL for S3 objects               | No       |
+| `AWS_REGION`                | AWS region (default `ap-south-1`)            | No       |
 | `AWS_ACCESS_KEY_ID`         | AWS credentials                              | No       |
 | `AWS_SECRET_ACCESS_KEY`     | AWS credentials                              | No       |
 | `THROTTLE_TTL`              | Rate-limit window in ms (default `60000`)    | No       |
 | `THROTTLE_LIMIT`            | Max requests per window (default `100`)      | No       |
 | `SWAGGER_ENABLED`           | Enable Swagger UI (`true` / `false`)         | No       |
+| `SWAGGER_PATH`              | Swagger UI path (default `api/docs`)         | No       |
 | `ADMIN_EMAIL`               | Seed admin email                             | No       |
 | `ADMIN_PASSWORD`            | Seed admin password                          | No       |
 | `ADMIN_NAME`                | Seed admin display name                      | No       |
@@ -261,16 +276,17 @@ Backend env vars are validated by Joi on boot (`backend/src/config/validation.sc
 
 ## Frontend Route Map
 
-The root path `/` redirects to `/me/dashboard`. The buyer experience is the default for every authenticated user; sellers and admins access their own areas explicitly.
+The root path `/` renders a public marketing homepage. Authenticated users are silently redirected to `/me/dashboard` by the `<HomeAuthRedirect>` component. The buyer dashboard is the canonical landing surface for logged-in users.
 
-| Group      | Path                                                                                                                                                                  | Who can access                        |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `(auth)`   | `/login`, `/register`                                                                                                                                                 | Public                                |
-| `(buyer)`  | `/me/dashboard`, `/me/profile`, `/me/inquiries[/:id]`, `/me/saved`, `/me/requirements`, `/me/know-your-seller`, `/me/faq`, `/me/ship`, `/category/:slug`, `/product/:slug`, `/supplier/:slug`, `/search`, `/requirements/new` | Any authenticated user |
-| `(seller)` | `/seller/dashboard`, `/seller/products[/:id/edit]`, `/seller/products/new`, `/seller/inquiries[/:id]`, `/seller/leads`, `/seller/profile`                             | Seller + admin                        |
-| `(admin)`  | `/admin/dashboard`, `/admin/users`, `/admin/sellers`, `/admin/products`, `/admin/categories`, `/admin/inquiries`                                                      | Admin only                            |
+| Group      | Path                                                                                                                                                                        | Who can access                        |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `(public)` | `/`, `/product/:slug`, `/category/:slug`, `/supplier/:slug`, `/search`, `/requirements`, `/requirements/new`                                                                | Public — no auth required             |
+| `(auth)`   | `/login`, `/register`                                                                                                                                                       | Public — redirects if already logged in |
+| `(buyer)`  | `/me/dashboard`, `/me/profile`, `/me/inquiries[/:id]`, `/me/saved`, `/me/requirements`, `/me/requirements/new`, `/me/know-your-seller`, `/me/faq`, `/me/ship`, `/me/search` | Any authenticated user                |
+| `(seller)` | `/seller/dashboard`, `/seller/products[/:id/edit]`, `/seller/products/new`, `/seller/inquiries[/:id]`, `/seller/leads`, `/seller/profile`                                   | Seller + admin roles                  |
+| `(admin)`  | `/admin/dashboard`, `/admin/users`, `/admin/sellers`, `/admin/products`, `/admin/categories`, `/admin/inquiries`                                                            | Admin only                            |
 
-Route protection is implemented client-side in `frontend/src/features/auth/protected.tsx`, which reads auth status from Redux and redirects unauthenticated or unauthorized users.
+Route protection for authenticated areas is implemented in `frontend/src/features/auth/protected.tsx`, which reads auth status from Redux and redirects unauthorized users. Public routes have no protection wrapper.
 
 ---
 

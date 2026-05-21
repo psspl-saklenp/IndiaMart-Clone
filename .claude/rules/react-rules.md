@@ -14,14 +14,20 @@
 - Never use `useEffect` to fetch data. Use TanStack Query or `async` Server Components instead.
 
 ## Route Groups
-| Group | Path | Who can access |
+| Group | Path prefix | Who can access |
 |---|---|---|
+| `(public)` | `/`, `/product/:slug`, `/category/:slug`, `/supplier/:slug`, `/search`, `/requirements`, `/requirements/new` | Public — no auth required |
 | `(auth)` | `/login`, `/register` | Public only — redirect if already logged in |
-| `(buyer)` | `/`, `/products/*`, `/suppliers/*`, `/inquiries/*`, `/requirements/*`, `/saved` | Any authenticated user |
+| `(buyer)` | `/me/*` | Any authenticated user (buyer, seller, admin) |
 | `(seller)` | `/seller/*` | `seller` or `admin` role |
 | `(admin)` | `/admin/*` | `admin` role only |
 
-Route protection is done in `frontend/src/features/auth/protected.tsx` — do not duplicate logic elsewhere.
+**`(public)` layout** — `DynamicNavbar` + `GuestBanner` + `BuyerFooter`. No `Protected` wrapper.
+**`(buyer)` layout** — `BuyerAppBar` + `BuyerSidebar` + `Protected allow={['buyer','seller','admin']}`.
+
+Route protection for authenticated areas is done in `frontend/src/features/auth/protected.tsx` — do not duplicate logic elsewhere.
+
+When adding a new page that should be accessible without login, place it under `(public)`. When adding a dashboard-style page for authenticated users, place it under `(buyer)/me/`.
 
 ## State Management
 
@@ -72,7 +78,8 @@ Redux is ONLY for:
 - Single shared Axios instance: `frontend/src/lib/axios.ts`.
 - Always use this instance — never create `axios.create()` elsewhere.
 - The refresh interceptor dedupes concurrent refresh calls via a shared in-flight promise.
-- Never import `axios` directly; import the configured instance: `import api from '@/lib/axios'`.
+- Never import `axios` directly; import the configured instance: `import { api } from '@/lib/axios'`.
+- The `api` export is a named export from `axios.ts`. Do not use `import api from '@/lib/axios'` (that is a default import and will fail).
 
 ## Styling (Tailwind CSS v4)
 - Use `@theme` variables defined in `globals.css` — do not use arbitrary Tailwind values.

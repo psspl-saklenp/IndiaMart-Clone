@@ -6,6 +6,7 @@ This document describes the architecture of the **indiamart-clone** B2B marketpl
 
 ## Table of Contents
 
+- [System Architecture Diagram](#system-architecture-diagram)
 - [Monorepo Layout](#monorepo-layout)
 - [Frontend Architecture](#frontend-architecture)
   - [Routing Model](#routing-model)
@@ -31,6 +32,43 @@ This document describes the architecture of the **indiamart-clone** B2B marketpl
 
 ---
 
+## System Architecture Diagram
+
+```mermaid
+graph TD
+    Browser["Browser\n(Next.js 15 SPA)"]
+    subgraph "Frontend — Vercel"
+        NextJS["Next.js App Router\n(port 3000)"]
+        Redux["Redux Toolkit\nauth + ui slices"]
+        TQ["TanStack Query v5\nserver state cache"]
+        Axios["Axios singleton\n+ refresh interceptor"]
+    end
+    subgraph "Backend — Render / Fly.io"
+        NestJS["NestJS 11\n(port 3001 /api/v1)"]
+        Guards["ThrottlerGuard\nJwtAuthGuard\nRolesGuard"]
+        Modules["Domain Modules\nauth · products · sellers\ninquiries · requirements\nsearch · uploads · admin"]
+        Sequelize["Sequelize-TypeScript ORM"]
+    end
+    subgraph "Data & Storage"
+        Postgres["PostgreSQL 16\nuuid-ossp · pg_trgm · unaccent"]
+        S3["AWS S3\n(presigned PUT)"]
+        LocalDisk["Local Disk\nbackend/uploads/"]
+    end
+
+    Browser --> NextJS
+    NextJS --> Axios
+    Axios -- "Bearer JWT" --> NestJS
+    NextJS --> Redux
+    NextJS --> TQ
+    TQ --> Axios
+    NestJS --> Guards --> Modules
+    Modules --> Sequelize --> Postgres
+    Modules -- "presigned URL" --> S3
+    Modules -- "multipart fallback" --> LocalDisk
+```
+
+---
+
 ## Monorepo Layout
 
 ```
@@ -51,17 +89,23 @@ Workspaces are managed by **npm workspaces** from the repo root. No Turborepo fo
 
 ### Routing Model
 
-The App Router is divided into four route groups, each with its own layout and protection rules. The root path `/` redirects to `/me/dashboard`, making the buyer experience the canonical landing surface.
+The App Router is divided into five route groups, each with its own layout and protection rules.
 
 ```
 frontend/src/app/
-├── (auth)/            login, register                    — Public
-├── (buyer)/           dashboard, browse, search, …       — Any authenticated user
+├── (public)/          homepage, product/category/supplier pages,
+│                      search, requirements feed           — No auth required
+├── (auth)/            login, register                    — Public; redirects if already logged in
+├── (buyer)/           /me/* dashboard area               — Any authenticated user
 ├── (seller)/          seller dashboard, catalog, leads   — seller + admin roles
 └── (admin)/           platform moderation                — admin role only
 ```
 
-Route protection is implemented client-side by `frontend/src/features/auth/protected.tsx`, which reads auth status from the Redux `auth` slice and redirects unauthenticated or unauthorized users.
+**Key routing behaviours:**
+- The root `/` renders a public marketing homepage (`(public)/page.tsx`). Authenticated users are silently redirected to `/me/dashboard` by the `<HomeAuthRedirect>` component rendered inside the page.
+- Product detail, category, supplier profile, search results, and the requirements feed are all under `(public)` — fully accessible without login, with a guest banner prompting sign-up.
+- The `(buyer)` group hosts the authenticated dashboard area: `/me/dashboard`, `/me/profile`, `/me/inquiries`, `/me/saved`, `/me/requirements`, etc.
+- Route protection for authenticated areas is implemented in `frontend/src/features/auth/protected.tsx`, which reads the Redux `auth` slice status and redirects unauthorized users.
 
 Every account is a buyer by default. The `seller` role is additive — sellers see the full buyer surface plus their own seller area.
 
@@ -87,19 +131,21 @@ Each subfolder under `frontend/src/features/` owns its UI components, hooks, API
 
 ```
 frontend/src/features/
-├── admin/             Platform moderation UI
-├── auth/              Login, register, protected wrapper, auth hooks
-├── buyer/             Buyer dashboard, profile
-├── categories/        Category tree, category page
-├── dashboard/         Seller KPI dashboard, charts
-├── inquiries/         Inquiry list, thread view, reply form
-├── products/          Product listing, detail, CRUD forms
-├── requirements/      Buy-leads feed, post requirement form
-├── saved/             Wishlist list, save/unsave actions
-├── search/            Unified search page, autocomplete
-├── seller/            Seller catalog editor, product CRUD
-├── sellers/           Supplier directory, public profile
-└── uploads/           Upload widget (S3 presign + local fallback)
+├── admin/             Platform moderation UI (users, sellers, products, categories, inquiries)
+├── auth/              Login, register forms; protected.tsx wrapper; seller-signup modal + trigger
+├── buyer/             Buyer dashboard, profile editor, KYS lookup, FAQ, ship page
+├── categories/        Category tree hook, category API client
+├── dashboard/         Seller KPI dashboard, charts, timeseries, top-products
+├── home/              Public homepage sections (hero search, category grid, featured products/suppliers,
+│                      buy-leads preview, auth-redirect)
+├── inquiries/         Inquiry list, thread view, reply form, unread-count hook
+├── products/          Product listing, detail view, image gallery, search results grid
+├── requirements/      Public feed, my requirements list, post-requirement form, seller leads view
+├── saved/             Wishlist list, save/unsave heart toggle, saved-set hook
+├── search/            Unified search page, autocomplete API client
+├── seller/            Seller catalog editor: product list, product form, product-image manager
+├── sellers/           Supplier directory, public supplier profile editor
+└── uploads/           Upload widget (S3 presign + local multipart fallback)
 ```
 
 Shared layout and UI primitives live in `frontend/src/components/{layout,ui,product,supplier,charts,system}`.
@@ -215,6 +261,118 @@ HTTP Response
 ## Data Layer
 
 PostgreSQL 16 with `uuid-ossp`, `pg_trgm`, and `unaccent` extensions enabled at init (see `docker/`). All tables use UUID primary keys. `created_at` / `updated_at` are required on every table. `deleted_at` is added to every paranoid (soft-delete) table.
+
+### Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    users {
+        uuid id PK
+        string email UK
+        string password_hash
+        enum role "buyer|seller|admin"
+        timestamp deleted_at
+    }
+    buyer_profiles {
+        uuid id PK
+        uuid user_id FK
+        string phone
+        string city
+    }
+    seller_profiles {
+        uuid id PK
+        uuid user_id FK
+        string company_name
+        string slug UK
+        string gst_number
+        string pan_number
+        string city
+        string pincode
+        decimal rating
+        bool is_verified
+    }
+    categories {
+        uuid id PK
+        string name
+        string slug UK
+        uuid parent_id FK
+        string image_url
+    }
+    products {
+        uuid id PK
+        uuid seller_id FK
+        uuid category_id FK
+        string name
+        string slug UK
+        decimal price
+        decimal min_order_quantity
+        string unit
+        enum stock_status "in_stock|out_of_stock|on_demand"
+        jsonb specs
+        int view_count
+        int inquiry_count
+        bool is_active
+        timestamp deleted_at
+    }
+    product_images {
+        uuid id PK
+        uuid product_id FK
+        string url
+        string s3_key
+        bool is_primary
+        int position
+    }
+    inquiries {
+        uuid id PK
+        uuid buyer_id FK
+        uuid seller_id FK
+        uuid product_id FK
+        string subject
+        string message
+        enum status "new|responded|closed"
+        timestamp buyer_last_read_at
+        timestamp seller_last_read_at
+    }
+    inquiry_messages {
+        uuid id PK
+        uuid inquiry_id FK
+        uuid sender_id FK
+        string message
+        jsonb attachments
+    }
+    saved_products {
+        uuid id PK
+        uuid buyer_id FK
+        uuid product_id FK
+    }
+    requirements {
+        uuid id PK
+        uuid buyer_id FK
+        uuid category_id FK
+        string title
+        string description
+        decimal quantity
+        string unit
+        string location_city
+        enum status "open|closed"
+        int response_count
+    }
+
+    users ||--o| buyer_profiles : "has"
+    users ||--o| seller_profiles : "has"
+    seller_profiles ||--o{ products : "lists"
+    categories ||--o{ products : "contains"
+    categories ||--o{ categories : "parent of"
+    products ||--o{ product_images : "has"
+    users ||--o{ inquiries : "sends (buyer)"
+    seller_profiles ||--o{ inquiries : "receives"
+    products ||--o{ inquiries : "referenced by"
+    inquiries ||--o{ inquiry_messages : "contains"
+    users ||--o{ saved_products : "saves"
+    products ||--o{ saved_products : "saved by"
+    users ||--o{ requirements : "posts"
+    categories ||--o{ requirements : "tagged with"
+```
 
 ### Database Schema (Migrations)
 
