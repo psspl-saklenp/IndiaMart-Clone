@@ -21,6 +21,7 @@ import { SellerDashboardModule } from './modules/seller-dashboard/seller-dashboa
 import { SellersModule } from './modules/sellers/sellers.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { UsersModule } from './modules/users/users.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { UsersModule } from './modules/users/users.module';
     RequirementsModule,
     UploadsModule,
     AdminModule,
+    ReviewsModule,
   ],
   providers: [
     // Global guards run in this order: throttler -> jwt -> roles.

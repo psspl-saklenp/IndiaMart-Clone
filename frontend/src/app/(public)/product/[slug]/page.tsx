@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ProductImageGallery } from '@/features/products/product-image-gallery';
 import { getProduct } from '@/features/products/api';
 import { InquiryDialog } from '@/features/inquiries/inquiry-dialog';
+import { ReviewsSection } from '@/features/reviews/components/reviews-section';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -124,6 +125,9 @@ export default async function ProductDetailPage({ params }: Props) {
               </dl>
             </section>
           )}
+
+          {/* Reviews & ratings */}
+          <ReviewsSection productId={product.id} sellerId={product.seller.id} />
         </div>
 
         {/* Right: sticky inquiry sidebar */}
