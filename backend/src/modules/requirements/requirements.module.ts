@@ -3,13 +3,17 @@ import { SequelizeModule } from '@nestjs/sequelize';
 
 import { Category } from '../categories/category.model';
 import { InquiriesModule } from '../inquiries/inquiries.module';
+import { Product } from '../products/product.model';
 import { User } from '../users/user.model';
 import { Requirement } from './requirement.model';
 import { RequirementsController } from './requirements.controller';
 import { RequirementsService } from './requirements.service';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Requirement, Category, User]), InquiriesModule],
+  imports: [
+    SequelizeModule.forFeature([Requirement, Category, Product, User]),
+    InquiriesModule,
+  ],
   controllers: [RequirementsController],
   providers: [RequirementsService],
   exports: [RequirementsService],

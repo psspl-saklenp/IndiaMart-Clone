@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import {
   updateStatus,
 } from '@/features/inquiries/api';
 import { useAuth } from '@/hooks/use-auth';
-import type { InquiryStatus } from '@/types/inquiries';
+import type { InquiryDetail, InquiryMessage, InquiryStatus } from '@/types/inquiries';
 
 const STATUS_TONE = {
   new: 'info',
@@ -31,6 +31,7 @@ export function InquiryThread({ id, viewer }: Props) {
   const qc = useQueryClient();
   const { user } = useAuth();
   const [reply, setReply] = useState('');
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const {
     data: inquiry,
@@ -40,23 +41,42 @@ export function InquiryThread({ id, viewer }: Props) {
   } = useQuery({
     queryKey: ['inquiry', id],
     queryFn: () => getInquiry(id),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
+
+  // Scroll to the bottom whenever the messages list grows.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [inquiry?.messages.length]);
 
   const sendMut = useMutation({
     mutationFn: () => addMessage(id, { message: reply.trim() }),
-    onSuccess: () => {
+    onSuccess: (newMessage: InquiryMessage) => {
       setReply('');
-      qc.invalidateQueries({ queryKey: ['inquiry', id] });
-      qc.invalidateQueries({ queryKey: ['inquiries'] });
-      qc.invalidateQueries({ queryKey: ['inquiry-counts'] });
+
+      // ── Instant cache update ─────────────────────────────────────────────
+      // Append the API-returned message directly into the cached inquiry so
+      // the UI updates immediately — no extra network round-trip needed.
+      qc.setQueryData<InquiryDetail>(['inquiry', id], (prev) => {
+        if (!prev) return prev;
+        // Guard against duplicates if the background refetch beats us.
+        const already = prev.messages.some((m) => m.id === newMessage.id);
+        if (already) return prev;
+        return { ...prev, messages: [...prev.messages, newMessage] };
+      });
+
+      // Keep the list + notification counts in sync in the background.
+      void qc.invalidateQueries({ queryKey: ['inquiries'] });
+      void qc.invalidateQueries({ queryKey: ['inquiry-counts'] });
     },
   });
 
   const statusMut = useMutation({
     mutationFn: (next: InquiryStatus) => updateStatus(id, next),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['inquiry', id] });
-      qc.invalidateQueries({ queryKey: ['inquiries'] });
+      void qc.invalidateQueries({ queryKey: ['inquiry', id] });
+      void qc.invalidateQueries({ queryKey: ['inquiries'] });
     },
   });
 
@@ -181,6 +201,8 @@ export function InquiryThread({ id, viewer }: Props) {
             </li>
           );
         })}
+        {/* Sentinel element — scrolled into view after each new message. */}
+        <div ref={bottomRef} />
       </ul>
 
       {canCompose ? (

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -11,6 +12,9 @@ import type { AuthenticatedUser } from '../../common/decorators/current-user.dec
 import { buildMeta, type PaginatedResult } from '../../common/utils/pagination';
 import { Category } from '../categories/category.model';
 import { InquiriesService } from '../inquiries/inquiries.service';
+import { NotificationType } from '../notifications/enums/notification-type.enum';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Product } from '../products/product.model';
 import { UserRole } from '../users/enums/user-role.enum';
 import { User } from '../users/user.model';
 import {
@@ -23,10 +27,14 @@ import { Requirement } from './requirement.model';
 
 @Injectable()
 export class RequirementsService {
+  private readonly logger = new Logger(RequirementsService.name);
+
   constructor(
     @InjectModel(Requirement) private readonly requirementModel: typeof Requirement,
     @InjectModel(Category) private readonly categoryModel: typeof Category,
+    @InjectModel(Product) private readonly productModel: typeof Product,
     private readonly inquiriesService: InquiriesService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(buyer: AuthenticatedUser, dto: CreateRequirementDto): Promise<RequirementDto> {
@@ -45,7 +53,43 @@ export class RequirementsService {
       status: RequirementStatus.OPEN,
     } as Requirement);
 
+    // Notify every seller that has at least one product in this category,
+    // excluding the buyer themselves. Fire-and-forget — never block the response.
+    void this.notifyMatchingSellers(created, buyer.id).catch((err) =>
+      this.logger.warn(`notifyMatchingSellers failed: ${err}`),
+    );
+
     return this.findById(created.id);
+  }
+
+  private async notifyMatchingSellers(req: Requirement, buyerId: string): Promise<void> {
+    const products = await this.productModel.findAll({
+      where: { categoryId: req.categoryId, isActive: true },
+      attributes: ['sellerId'],
+      group: ['sellerId'],
+      raw: true,
+    });
+
+    const sellerIds = Array.from(
+      new Set(
+        products
+          .map((p) => (p as unknown as { sellerId: string }).sellerId)
+          .filter((id) => id && id !== buyerId),
+      ),
+    );
+
+    await Promise.all(
+      sellerIds.map((sellerId) =>
+        this.notifications.notify({
+          userId: sellerId,
+          type: NotificationType.REQUIREMENT_MATCH,
+          title: 'New requirement matches your products',
+          body: req.title,
+          link: `/seller/requirements`,
+          data: { requirementId: req.id },
+        }),
+      ),
+    );
   }
 
   async list(

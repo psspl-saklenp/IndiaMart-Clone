@@ -10,6 +10,8 @@ import { Op, type WhereOptions } from 'sequelize';
 
 import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { buildMeta, type PaginatedResult } from '../../common/utils/pagination';
+import { NotificationType } from '../notifications/enums/notification-type.enum';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ProductImage } from '../products/product-image.model';
 import { Product } from '../products/product.model';
 import { UserRole } from '../users/enums/user-role.enum';
@@ -38,6 +40,7 @@ export class InquiriesService {
     @InjectModel(InquiryMessage) private readonly messageModel: typeof InquiryMessage,
     @InjectModel(Product) private readonly productModel: typeof Product,
     @InjectModel(User) private readonly userModel: typeof User,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(buyer: AuthenticatedUser, dto: CreateInquiryDto): Promise<InquiryDetailDto> {
@@ -84,6 +87,24 @@ export class InquiriesService {
         .increment('inquiryCount', { by: 1, where: { id: dto.productId } })
         .catch((err) => this.logger.warn(`inquiry_count increment failed: ${err}`));
     }
+
+    // Fire-and-forget: notify the seller. Failure must not break the request.
+    const buyerName = (await this.userModel.findByPk(buyer.id))?.name ?? 'A buyer';
+    void this.notifications
+      .notify({
+        userId: dto.sellerId,
+        type: NotificationType.NEW_INQUIRY,
+        title: 'New inquiry received',
+        body: `${buyerName}: ${dto.subject}`,
+        link: `/seller/inquiries/${inquiry.id}`,
+        data: {
+          inquiryId: inquiry.id,
+          actorId: buyer.id,
+          actorName: buyerName,
+          ...(dto.productId ? { productId: dto.productId } : {}),
+        },
+      })
+      .catch((err) => this.logger.warn(`notify(new_inquiry) failed: ${err}`));
 
     return this.findById(inquiry.id, buyer);
   }
@@ -214,15 +235,44 @@ export class InquiriesService {
     await this.inquiryModel.update({}, { where: { id: inquiry.id }, silent: false });
 
     const sender = await this.userModel.findByPk(user.id);
+    const senderName = sender?.name ?? 'Someone';
+
+    // Notify the OTHER side of the conversation. Admins replying as observers
+    // are rare but still useful — they notify whichever side wasn't the sender.
+    const recipientId =
+      user.id === inquiry.buyerId ? inquiry.sellerId : inquiry.buyerId;
+    void this.notifications
+      .notify({
+        userId: recipientId,
+        type: NotificationType.NEW_MESSAGE,
+        title: 'New message',
+        body: `${senderName}: ${this.preview(dto.message)}`,
+        link:
+          recipientId === inquiry.sellerId
+            ? `/seller/inquiries/${inquiry.id}`
+            : `/me/inquiries/${inquiry.id}`,
+        data: {
+          inquiryId: inquiry.id,
+          actorId: user.id,
+          actorName: senderName,
+        },
+      })
+      .catch((err) => this.logger.warn(`notify(new_message) failed: ${err}`));
+
     return {
       id: message.id,
       inquiryId: message.inquiryId,
       senderUserId: message.senderUserId,
-      senderName: sender?.name ?? 'Unknown',
+      senderName,
       senderRole: (sender?.role ?? user.role) as 'buyer' | 'seller' | 'admin',
       message: message.message,
       createdAt: message.get('createdAt') as Date,
     };
+  }
+
+  private preview(text: string, max = 80): string {
+    const t = text.trim();
+    return t.length > max ? `${t.slice(0, max - 1)}…` : t;
   }
 
   async updateStatus(
@@ -294,7 +344,6 @@ export class InquiriesService {
           required: false,
           separate: true,
           order: [['createdAt', 'ASC']],
-          include: [{ model: User, as: 'sender', attributes: ['id', 'name', 'role'] }],
         },
       ],
     });
@@ -361,21 +410,45 @@ export class InquiriesService {
   }
 
   private toDetail(inquiry: Inquiry, viewer: AuthenticatedUser): InquiryDetailDto {
+    // Build a quick lookup for sender name + role from the already-loaded
+    // buyer/seller associations — avoids a nested include inside separate:true
+    // (which causes Sequelize to return only the last row).
+    const actorMap: Record<string, { name: string; role: 'buyer' | 'seller' | 'admin' }> = {};
+    if (inquiry.buyer) {
+      actorMap[inquiry.buyer.id] = { name: inquiry.buyer.name, role: 'buyer' };
+    }
+    if (inquiry.seller) {
+      actorMap[inquiry.seller.id] = { name: inquiry.seller.name, role: 'seller' };
+    }
+
     return {
       ...this.toSummary(inquiry, viewer),
       message: inquiry.message,
       quantity: inquiry.quantity,
       unit: inquiry.unit,
       expectedPrice: inquiry.expectedPrice,
-      messages: (inquiry.messages ?? []).map((m) => ({
-        id: m.id,
-        inquiryId: m.inquiryId,
-        senderUserId: m.senderUserId,
-        senderName: m.sender?.name ?? 'Unknown',
-        senderRole: (m.sender?.role ?? 'buyer') as 'buyer' | 'seller' | 'admin',
-        message: m.message,
-        createdAt: m.get('createdAt') as Date,
-      })),
+      messages: (inquiry.messages ?? []).map((m) => {
+        // Determine role from inquiry context: buyer / seller / admin fallback.
+        let senderRole: 'buyer' | 'seller' | 'admin';
+        if (m.senderUserId === inquiry.buyerId) {
+          senderRole = 'buyer';
+        } else if (m.senderUserId === inquiry.sellerId) {
+          senderRole = 'seller';
+        } else {
+          senderRole = 'admin';
+        }
+
+        const actor = actorMap[m.senderUserId];
+        return {
+          id: m.id,
+          inquiryId: m.inquiryId,
+          senderUserId: m.senderUserId,
+          senderName: actor?.name ?? 'Unknown',
+          senderRole,
+          message: m.message,
+          createdAt: m.get('createdAt') as Date,
+        };
+      }),
     };
   }
 

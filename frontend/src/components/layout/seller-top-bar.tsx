@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useLogout } from '@/hooks/use-logout';
 import { cn } from '@/lib/utils';
+import { NotificationsBell } from '@/features/notifications/components/notifications-bell';
 
 export function SellerTopBar() {
   const { user } = useAuth();
@@ -63,6 +64,7 @@ export function SellerTopBar() {
 
           <UtilityLink href="/seller/inquiries" icon={<IconChat />} label="Inquiries" />
           <UtilityLink href="#" icon={<IconHelp />} label="Help" />
+          <NotificationsBell />
 
           {user ? (
             <div className="relative">

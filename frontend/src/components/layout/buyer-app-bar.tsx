@@ -6,6 +6,7 @@ import { Suspense, useState } from 'react';
 import { MegaMenu } from '@/components/layout/mega-menu';
 import { SearchBar } from '@/components/layout/search-bar';
 import { useSellAction } from '@/features/auth/use-sell-action';
+import { NotificationsBell } from '@/features/notifications/components/notifications-bell';
 import { useAuth } from '@/hooks/use-auth';
 import { useLogout } from '@/hooks/use-logout';
 import { cn } from '@/lib/utils';
@@ -57,6 +58,7 @@ export function BuyerAppBar() {
         <div className="ml-auto flex items-center gap-1">
           <UtilityButton onClick={handleSellClick} icon={<IconStorefront />} label="Sell" />
           <UtilityLink href="/me/inquiries" icon={<IconChat />} label="Messages" />
+          <NotificationsBell />
           <UtilityLink href="#" icon={<IconHelp />} label="Help" />
 
           {/* Profile dropdown */}

@@ -11,6 +11,8 @@ import { col, fn, literal, Op } from 'sequelize';
 
 import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { buildMeta, type PaginatedResult } from '../../common/utils/pagination';
+import { NotificationType } from '../notifications/enums/notification-type.enum';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Product } from '../products/product.model';
 import { UserRole } from '../users/enums/user-role.enum';
 import { User } from '../users/user.model';
@@ -31,6 +33,7 @@ export class ReviewsService {
   constructor(
     @InjectModel(Review) private readonly reviewModel: typeof Review,
     @InjectModel(Product) private readonly productModel: typeof Product,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ---- Public actions ----
@@ -109,6 +112,24 @@ export class ReviewsService {
     } as Review);
 
     const full = await this.loadFull(review.id);
+
+    void this.notifications
+      .notify({
+        userId: product.sellerId,
+        type: NotificationType.NEW_REVIEW,
+        title: `New ${dto.rating}-star review`,
+        body: full.title ?? product.name,
+        link: `/seller/products`,
+        data: {
+          reviewId: review.id,
+          productId: product.id,
+          rating: dto.rating,
+          actorId: user.id,
+          actorName: full.reviewer?.name ?? 'A buyer',
+        },
+      })
+      .catch((err) => this.logger.warn(`notify(new_review) failed: ${err}`));
+
     return this.toDto(full);
   }
 

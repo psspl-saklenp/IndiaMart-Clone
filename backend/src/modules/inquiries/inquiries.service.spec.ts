@@ -6,6 +6,7 @@ import { InquiriesService } from './inquiries.service';
 import { Inquiry } from './inquiry.model';
 import { InquiryMessage } from './inquiry-message.model';
 import { InquiryStatus } from './enums/inquiry-status.enum';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Product } from '../products/product.model';
 import { User } from '../users/user.model';
 import { UserRole } from '../users/enums/user-role.enum';
@@ -35,6 +36,8 @@ describe('InquiriesService', () => {
     productModel = { findByPk: jest.fn(), increment: jest.fn().mockResolvedValue(undefined) };
     userModel = { findByPk: jest.fn() };
 
+    const notificationsService = { notify: jest.fn().mockResolvedValue(null) };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         InquiriesService,
@@ -42,6 +45,7 @@ describe('InquiriesService', () => {
         { provide: getModelToken(InquiryMessage), useValue: messageModel },
         { provide: getModelToken(Product), useValue: productModel },
         { provide: getModelToken(User), useValue: userModel },
+        { provide: NotificationsService, useValue: notificationsService },
       ],
     }).compile();
 

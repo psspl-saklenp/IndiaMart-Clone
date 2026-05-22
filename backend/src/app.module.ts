@@ -13,6 +13,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { InquiriesModule } from './modules/inquiries/inquiries.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ProductsModule } from './modules/products/products.module';
 import { RequirementsModule } from './modules/requirements/requirements.module';
 import { SavedProductsModule } from './modules/saved-products/saved-products.module';
@@ -68,6 +69,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
     UploadsModule,
     AdminModule,
     ReviewsModule,
+    NotificationsModule,
   ],
   providers: [
     // Global guards run in this order: throttler -> jwt -> roles.
